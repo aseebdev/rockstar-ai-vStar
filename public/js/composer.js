@@ -68,6 +68,25 @@ const Composer = (function () {
       }
     });
 
+
+    // Drag-and-drop files into the composer.
+    const composerCard = document.querySelector('.composer-card');
+    composerCard?.addEventListener('dragover', e => { e.preventDefault(); composerCard.classList.add('drag-active'); });
+    composerCard?.addEventListener('dragleave', e => { if (!composerCard.contains(e.relatedTarget)) composerCard.classList.remove('drag-active'); });
+    composerCard?.addEventListener('drop', async e => {
+      e.preventDefault(); composerCard.classList.remove('drag-active');
+      try { await addFiles(Array.from(e.dataTransfer?.files || [])); }
+      catch (err) { window.UI?.showToast(err.message || 'Could not attach dropped file.', 'error', 5000); }
+    });
+
+    // Clipboard image paste.
+    textarea.addEventListener('paste', async e => {
+      const files = Array.from(e.clipboardData?.files || []).filter(f => f.type.startsWith('image/'));
+      if (!files.length) return;
+      try { await addFiles(files); }
+      catch (err) { window.UI?.showToast(err.message || 'Could not paste image.', 'error', 5000); }
+    });
+
     autoResize();
     updateMeta();
     renderAttachments();

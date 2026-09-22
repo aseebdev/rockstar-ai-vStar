@@ -1,7 +1,7 @@
 {
   "name": "rockstar-ai",
-  "version": "2.9.0",
-  "description": "Rockstar AI public BYOK chat interface with accounts, cloud history, PostgreSQL, and Astra API",
+  "version": "4.0.0",
+  "description": "Rockstar AI multimodal workspace foundation with verified modes, BYOK Astra, file analysis, browser tools, and honest capability reporting",
   "main": "api/index.js",
   "type": "commonjs",
   "scripts": {

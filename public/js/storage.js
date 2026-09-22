@@ -81,7 +81,9 @@ const Storage = (function () {
     showTimestamps: true,
     systemPrompt: '',
     selectedModel: 'gpt-5.6-luna',
-    sidebarCollapsed: false
+    sidebarCollapsed: false,
+    aiMode: 'automatic',
+    voiceLanguage: 'en-US'
   };
 
   /**

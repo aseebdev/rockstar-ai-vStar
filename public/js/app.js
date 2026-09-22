@@ -53,6 +53,8 @@
       }
     });
 
+    window.RockstarTools?.init?.();
+
     Composer.init({
       onSubmit: handleSendMessage,
       onStop: handleStopGeneration,
@@ -73,6 +75,7 @@
     updateKeyRequiredUI();
     Auth.updateAccountUI();
     window.addEventListener('rockstar-key-changed', updateKeyRequiredUI);
+    window.addEventListener('rockstar-mode-changed', updateKeyRequiredUI);
   }
 
   function bindEvents() {
@@ -214,18 +217,18 @@
     const statusDot = document.getElementById('connection-status-dot');
     const sidebarModel = document.getElementById('sidebar-model-name');
 
-    if (banner) { banner.dataset.mode = hasKey ? 'astra' : 'core'; if (!banner.classList.contains('dismissed')) banner.classList.remove('hidden'); }
-    if (bannerTitle) bannerTitle.textContent = hasKey ? 'Astra model mode active' : 'Rockstar Core is active';
-    if (bannerText) bannerText.textContent = hasKey
-      ? 'Your own Astra key is active. New messages use your selected AI model and your provider credits.'
-      : 'Chat normally without a key. Add your Astra API key anytime to unlock the full external AI model.';
-    if (textarea) textarea.placeholder = hasKey ? 'Message Rockstar...' : 'Ask Rockstar Core anything...';
+    if (banner) { banner.dataset.mode = effectiveMode.cloud ? 'astra' : 'core'; if (!banner.classList.contains('dismissed')) banner.classList.remove('hidden'); }
+    if (bannerTitle) bannerTitle.textContent = effectiveMode.cloud ? 'Astra AI model mode active' : 'Rockstar Core is active';
+    if (bannerText) bannerText.textContent = effectiveMode.cloud
+      ? `Configured ${effectiveMode.model} cloud mode. The provider is verified when a request completes successfully.`
+      : (Storage.getSettings().aiMode === 'offline' ? 'Offline mode is selected. Cloud requests are disabled.' : 'Rockstar Core is active because no Astra key is connected.');
+    if (textarea) textarea.placeholder = effectiveMode.cloud ? 'Message Rockstar...' : 'Ask Rockstar Core anything...';
     if (attachBtn) attachBtn.title = hasKey ? 'Attach image or text/code file' : 'Attach a file for offline text analysis';
     if (statusDot) {
-      statusDot.classList.toggle('unconfigured', !hasKey);
-      statusDot.title = hasKey ? 'Astra AI model mode' : 'Rockstar Core offline mode — no Astra key';
+      statusDot.classList.toggle('unconfigured', !effectiveMode.cloud);
+      statusDot.title = effectiveMode.cloud ? `Astra AI model mode — ${effectiveMode.model}` : 'Rockstar Core offline mode';
     }
-    if (sidebarModel) sidebarModel.textContent = hasKey ? (Storage.getSettings().selectedModel || 'Astra model') : 'Rockstar Core';
+    if (sidebarModel) sidebarModel.textContent = effectiveMode.cloud ? effectiveMode.model : 'Rockstar Core';
     Composer.refreshKeyState?.();
   }
 
@@ -455,11 +458,22 @@
     }
   }
 
+  function getEffectiveMode() {
+    const settings = Storage.getSettings();
+    const requested = settings.aiMode || 'automatic';
+    const hasKey = Auth.hasAstraKey();
+    if (requested === 'offline') return { id: 'offline', cloud: false, model: 'rockstar-core' };
+    if (requested === 'local') return { id: 'offline', cloud: false, model: 'rockstar-core', note: 'Local AI is not configured.' };
+    if (hasKey) return { id: 'cloud', cloud: true, model: settings.selectedModel || 'gpt-5.6-luna' };
+    return { id: 'offline', cloud: false, model: 'rockstar-core' };
+  }
+
   async function handleSendMessage(userText, attachments = []) {
     if ((!userText || !userText.trim()) && (!attachments || attachments.length === 0)) return;
     if (isStreaming) return;
 
-    if (!Auth.hasAstraKey()) {
+    const effectiveMode = getEffectiveMode();
+    if (!effectiveMode.cloud) {
       const localResponse = getLocalNoKeyResponse(userText, attachments);
       const title = (userText || attachments[0]?.name || 'Rockstar Core').slice(0, 35).replace(/\n/g, ' ');
       if (!activeConversationId) {
@@ -516,7 +530,7 @@
       messages: apiMessages,
       model: settings.selectedModel,
       systemPrompt: [
-        'RUNTIME MODE: Astra AI model mode. The user has a valid personal Astra API key connected. If the user asks which mode is active, say you are running through their selected Astra AI model, not Rockstar Core or offline mode.',
+        `RUNTIME MODE: VERIFIED ASTRA CLOUD MODE. The application verified the user's Astra key and selected model before this request. If asked which mode is active, state the selected Astra model. Never call this offline or Rockstar Core.`,
         settings.systemPrompt
       ].filter(Boolean).join('\n\n'),
       onChunk: (delta) => {
@@ -597,7 +611,7 @@
     // Find the preceding user message to re-trigger
     const lastUserMsg = remaining.filter(m => m.role === 'user').pop();
     if (lastUserMsg) {
-      if (!Auth.hasAstraKey()) {
+      if (!getEffectiveMode().cloud) {
         const localResponse = RockstarCore.generate(lastUserMsg.content, []);
         const localAssistant = await Storage.addMessage({ conversationId: activeConversationId, role: 'assistant', content: localResponse, model: 'rockstar-core' });
         UI.appendMessage(localAssistant, true);
@@ -616,7 +630,7 @@
         messages: apiMessages,
         model: settings.selectedModel,
         systemPrompt: [
-        'RUNTIME MODE: Astra AI model mode. The user has a valid personal Astra API key connected. If the user asks which mode is active, say you are running through their selected Astra AI model, not Rockstar Core or offline mode.',
+        `RUNTIME MODE: VERIFIED ASTRA CLOUD MODE. The application verified the user's Astra key and selected model before this request. If asked which mode is active, state the selected Astra model. Never call this offline or Rockstar Core.`,
         settings.systemPrompt
       ].filter(Boolean).join('\n\n'),
         onChunk: (delta) => {
@@ -659,6 +673,14 @@
       });
     }
   }
+
+  window.RockstarAI = window.RockstarAI || {};
+  window.RockstarAI.getActiveConversationData = async () => {
+    if (!activeConversationId) return null;
+    const conv = await Storage.getConversation(activeConversationId);
+    const messages = await Storage.getMessages(activeConversationId);
+    return { title: conv?.title || 'Rockstar Chat', messages };
+  };
 
   // Boot on DOM Ready
   if (document.readyState === 'loading') {

@@ -59,6 +59,20 @@ const Settings = (function () {
     const autoScrollToggle = document.getElementById('settings-auto-scroll');
     const timestampsToggle = document.getElementById('settings-timestamps');
     const systemPromptInput = document.getElementById('settings-system-prompt');
+    const aiModeSelect = document.getElementById('settings-ai-mode');
+    const aiModeDesc = document.getElementById('settings-ai-mode-desc');
+    if (aiModeSelect) aiModeSelect.value = saved.aiMode || 'automatic';
+    const updateModeDesc = () => {
+      const value = aiModeSelect?.value || 'automatic';
+      if (!aiModeDesc) return;
+      aiModeDesc.textContent = value === 'offline'
+        ? 'Offline mode disables cloud requests and uses Rockstar Core only.'
+        : value === 'cloud'
+          ? 'Cloud mode requires a valid saved Astra API key. If unavailable, Rockstar safely falls back instead of pretending.'
+          : 'Automatic uses Astra when your key is configured; otherwise it stays offline.';
+    };
+    aiModeSelect?.addEventListener('change', updateModeDesc);
+    updateModeDesc();
 
     if (enterToggle) enterToggle.checked = saved.enterToSend !== false;
     if (autoScrollToggle) autoScrollToggle.checked = saved.autoScroll !== false;
@@ -75,7 +89,8 @@ const Settings = (function () {
           enterToSend: enterToggle ? enterToggle.checked : true,
           autoScroll: autoScrollToggle ? autoScrollToggle.checked : true,
           showTimestamps: timestampsToggle ? timestampsToggle.checked : true,
-          systemPrompt: systemPromptInput ? systemPromptInput.value.trim() : ''
+          systemPrompt: systemPromptInput ? systemPromptInput.value.trim() : '',
+          aiMode: aiModeSelect ? aiModeSelect.value : 'automatic'
         });
         if (apiKeyInput && apiKeyInput.value.trim()) {
           try {
@@ -90,6 +105,8 @@ const Settings = (function () {
         close();
         loadModelsIntoDropdown();
         Auth.refreshUsage();
+        window.RockstarTools?.updateMode?.();
+        window.dispatchEvent(new Event('rockstar-mode-changed'));
         UI.showToast('Settings saved successfully', 'success');
         if (onDataChangedCallback) onDataChangedCallback();
       });

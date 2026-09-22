@@ -23,6 +23,36 @@ async function userAstraKey(req) {
   return decryptSecret(result.rows[0]?.astra_api_key_encrypted || '');
 }
 
+router.get('/capabilities', requireAuth, async (req, res, next) => {
+  try {
+    const hasKey = Boolean(await userAstraKey(req));
+    res.json({
+      ok: true,
+      modes: {
+        automatic: true,
+        cloud: hasKey,
+        offline: true,
+        local: false
+      },
+      tools: {
+        fileAnalysis: true,
+        documentExport: true,
+        webSearch: false,
+        imageGeneration: false,
+        codeExecution: false,
+        voiceBrowser: true
+      },
+      notes: {
+        webSearch: 'Not connected to a web-search provider.',
+        imageGeneration: 'Not connected to an image-generation provider.',
+        codeExecution: 'No server-side sandbox is enabled; arbitrary code is never executed by Rockstar AI.'
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/health', (req, res) => {
   const status = astraService.getStatus();
   res.json({
