@@ -8,10 +8,10 @@
   <title>Rockstar AI</title>
 
   <!-- Design Tokens & CSS Modules -->
-  <link rel="stylesheet" href="/css/tokens.css?v=3.3.0">
-  <link rel="stylesheet" href="/css/main.css?v=3.3.0">
-  <link rel="stylesheet" href="/css/components.css?v=3.3.0">
-  <link rel="stylesheet" href="/css/markdown.css?v=3.3.0">
+  <link rel="stylesheet" href="/css/tokens.css?v=3.4.0">
+  <link rel="stylesheet" href="/css/main.css?v=3.4.0">
+  <link rel="stylesheet" href="/css/components.css?v=3.4.0">
+  <link rel="stylesheet" href="/css/markdown.css?v=3.4.0">
 </head>
 <body>
 
@@ -68,7 +68,38 @@
 
   <!-- Authentication Gate -->
   <section id="auth-screen" class="auth-screen" aria-label="Rockstar AI authentication">
+    <div class="auth-liquid-atmosphere" aria-hidden="true">
+      <div class="liquid-ripple liquid-ripple-a"></div>
+      <div class="liquid-ripple liquid-ripple-b"></div>
+      <div class="liquid-person" id="liquid-person">
+        <svg viewBox="0 0 240 520" role="presentation" aria-hidden="true">
+          <defs>
+            <linearGradient id="bodyGlow" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="#dbeafe" stop-opacity=".75"/>
+              <stop offset=".48" stop-color="#a78bfa" stop-opacity=".42"/>
+              <stop offset="1" stop-color="#67e8f9" stop-opacity=".20"/>
+            </linearGradient>
+            <filter id="bodyBlur"><feGaussianBlur stdDeviation="4.5"/></filter>
+          </defs>
+          <g fill="none" stroke="url(#bodyGlow)" stroke-linecap="round" stroke-linejoin="round" filter="url(#bodyBlur)">
+            <circle cx="120" cy="55" r="31" stroke-width="9"/>
+            <path d="M99 91 C95 105 94 116 93 130 M141 91 C145 105 146 116 147 130" stroke-width="10"/>
+            <path d="M92 112 C68 122 49 143 42 173 M148 112 C172 122 191 143 198 173" stroke-width="12"/>
+            <path d="M120 101 C111 145 110 198 114 250 M120 101 C129 145 130 198 126 250" stroke-width="8"/>
+            <path d="M92 122 C88 168 86 214 92 264 C98 298 106 318 120 330 C134 318 142 298 148 264 C154 214 152 168 148 122" stroke-width="11"/>
+            <path d="M91 164 C108 176 132 176 149 164 M91 211 C108 221 132 221 149 211" stroke-width="6" opacity=".7"/>
+            <path d="M91 264 L82 366 L68 470 M149 264 L158 366 L172 470" stroke-width="12"/>
+            <path d="M91 266 L54 348 L30 418 M149 266 L186 348 L210 418" stroke-width="10"/>
+            <path d="M68 470 L48 486 M172 470 L192 486 M30 418 L24 432 M210 418 L216 432" stroke-width="9"/>
+          </g>
+        </svg>
+      </div>
+    </div>
     <div class="auth-layout">
+      <div class="auth-shards" aria-hidden="true">
+        <span class="auth-shard shard-a"></span><span class="auth-shard shard-b"></span><span class="auth-shard shard-c"></span>
+        <span class="auth-shard shard-d"></span><span class="auth-shard shard-e"></span><span class="auth-shard shard-f"></span>
+      </div>
       <div class="auth-card glass-panel">
       <div class="auth-brand">
         <div class="rockstar-mark">✦</div>
@@ -121,9 +152,18 @@
         🔐 AI usage is <strong>BYOK</strong>: every user supplies their own Astra API key.
         Your key is encrypted and saved to your account until you remove it.
       </div>
+
+      <button id="open-api-help" class="api-help-trigger" type="button" aria-controls="auth-help-panel">
+        <span class="api-help-trigger-icon" aria-hidden="true">✦</span>
+        <span><strong>Need an AI API key?</strong><small>See where to get one</small></span>
+        <span class="api-help-trigger-arrow" aria-hidden="true">→</span>
+      </button>
       </div>
 
-      <aside class="auth-help-panel" aria-label="Rockstar AI setup and creator information">
+      <aside id="auth-help-panel" class="auth-help-panel" aria-label="How to get an AI API key" aria-hidden="true" inert>
+        <button id="close-api-help" class="api-help-back" type="button">
+          <span aria-hidden="true">←</span> Back to login
+        </button>
         <div class="auth-help-glow" aria-hidden="true"></div>
         <div class="auth-help-topline"><span class="help-dot"></span> GET STARTED</div>
         <h2>Bring your own AI.</h2>
@@ -666,15 +706,15 @@
   </dialog>
 
   <!-- Client JavaScript Modules -->
-  <script src="/js/login-experience.js?v=3.3.0"></script>
-  <script src="/js/auth.js?v=3.3.0"></script>
-  <script src="/js/markdown.js?v=3.3.0"></script>
-  <script src="/js/storage.js?v=3.3.0"></script>
-  <script src="/js/astra-client.js?v=3.3.0"></script>
-  <script src="/js/local-engine.js?v=3.3.0"></script>
-  <script src="/js/ui.js?v=3.3.0"></script>
-  <script src="/js/composer.js?v=3.3.0"></script>
-  <script src="/js/settings.js?v=3.3.0"></script>
-  <script src="/js/app.js?v=3.3.0"></script>
+  <script src="/js/login-experience.js?v=3.4.0"></script>
+  <script src="/js/auth.js?v=3.4.0"></script>
+  <script src="/js/markdown.js?v=3.4.0"></script>
+  <script src="/js/storage.js?v=3.4.0"></script>
+  <script src="/js/astra-client.js?v=3.4.0"></script>
+  <script src="/js/local-engine.js?v=3.4.0"></script>
+  <script src="/js/ui.js?v=3.4.0"></script>
+  <script src="/js/composer.js?v=3.4.0"></script>
+  <script src="/js/settings.js?v=3.4.0"></script>
+  <script src="/js/app.js?v=3.4.0"></script>
 </body>
 </html>

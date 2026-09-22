@@ -146,8 +146,57 @@
 
   function onAuthenticated() { showWelcome(); }
 
+
+  function setupApiHelp() {
+    const layout = document.querySelector('.auth-layout');
+    const open = document.getElementById('open-api-help');
+    const close = document.getElementById('close-api-help');
+    const panel = document.getElementById('auth-help-panel');
+    const card = document.querySelector('.auth-card');
+    const person = document.getElementById('liquid-person');
+    if (!layout || !open || !close || !panel || !card) return;
+
+    const setOpen = (isOpen) => {
+      layout.classList.toggle('api-help-open', isOpen);
+      panel.setAttribute('aria-hidden', String(!isOpen));
+      if ('inert' in panel) panel.inert = !isOpen;
+      if ('inert' in card) card.inert = isOpen;
+      if (isOpen) {
+        close.focus({ preventScroll: true });
+      } else {
+        open.focus({ preventScroll: true });
+      }
+    };
+
+    open.addEventListener('click', () => setOpen(true));
+    close.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && layout.classList.contains('api-help-open')) setOpen(false);
+    });
+
+    // A slow, spring-like liquid-glass figure follows the pointer.
+    if (person && window.matchMedia('(pointer:fine)').matches) {
+      let targetX = 0, targetY = 0, currentX = 0, currentY = 0, raf = 0;
+      const move = (event) => {
+        targetX = (event.clientX / window.innerWidth - .5) * 34;
+        targetY = (event.clientY / window.innerHeight - .5) * 22;
+        if (!raf) raf = requestAnimationFrame(tick);
+      };
+      const tick = () => {
+        currentX += (targetX - currentX) * .045;
+        currentY += (targetY - currentY) * .045;
+        person.style.transform = `translate3d(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px), 0)`;
+        if (Math.abs(targetX-currentX) > .05 || Math.abs(targetY-currentY) > .05) raf = requestAnimationFrame(tick);
+        else raf = 0;
+      };
+      window.addEventListener('pointermove', move, { passive: true });
+      window.addEventListener('pointerleave', () => { targetX = 0; targetY = 0; if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     setupAudio();
+    setupApiHelp();
     boot();
   });
 
