@@ -9,6 +9,8 @@
 #sidebar {
   width: var(--sidebar-width);
   height: 100%;
+  min-width: 0;
+  overflow: hidden;
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-glass);
   backdrop-filter: var(--backdrop-blur);
@@ -21,9 +23,48 @@
 }
 
 #sidebar.collapsed {
-  transform: translateX(-100%);
+  transform: translateX(-18px);
   width: 0;
+  flex-basis: 0;
+  opacity: 0;
+  pointer-events: none;
   border-right-color: transparent;
+}
+
+/* Desktop restore button: appears only when the sidebar is fully collapsed. */
+.desktop-sidebar-toggle {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 30;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-glass-strong);
+  border-radius: 11px;
+  background: var(--bg-glass-card);
+  color: var(--text-secondary);
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(-8px) scale(.94);
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 220ms var(--ease-smooth), background 160ms ease, color 160ms ease;
+}
+
+.desktop-sidebar-toggle:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  transform: translateX(0) scale(1);
+}
+
+#sidebar.collapsed ~ #main-chat-area .desktop-sidebar-toggle {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  pointer-events: auto;
 }
 
 .sidebar-header {
@@ -326,6 +367,8 @@
 }
 
 @media (max-width: 768px) {
+  .desktop-sidebar-toggle { display: none; }
+
   #sidebar {
     position: fixed;
     top: 0;

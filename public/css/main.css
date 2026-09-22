@@ -44,6 +44,7 @@ body::before {
   display: flex;
   height: 100dvh;
   width: 100%;
+  min-width: 0;
   position: relative;
   z-index: 1;
   overflow: hidden;
