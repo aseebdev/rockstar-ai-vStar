@@ -1,7 +1,7 @@
 {
   "name": "rockstar-ai",
-  "version": "4.1.0",
-  "description": "Rockstar AI production multimodal tool layer with web search, image generation/editing, sandbox execution, document creation, TTS, secure sharing, jobs, and audit controls",
+  "version": "4.2.0",
+  "description": "Rockstar AI production multimodal workspace with real tool orchestration, image generation/editing, web search, sandbox execution, files, voice, secure sharing, jobs, audit controls, and context compaction",
   "main": "api/index.js",
   "type": "commonjs",
   "scripts": {

@@ -8,10 +8,10 @@
   <title>Rockstar AI</title>
 
   <!-- Design Tokens & CSS Modules -->
-  <link rel="stylesheet" href="/css/tokens.css?v=4.1.0">
-  <link rel="stylesheet" href="/css/main.css?v=4.1.0">
-  <link rel="stylesheet" href="/css/components.css?v=4.1.0">
-  <link rel="stylesheet" href="/css/markdown.css?v=4.1.0">
+  <link rel="stylesheet" href="/css/tokens.css?v=4.2.0">
+  <link rel="stylesheet" href="/css/main.css?v=4.2.0">
+  <link rel="stylesheet" href="/css/components.css?v=4.2.0">
+  <link rel="stylesheet" href="/css/markdown.css?v=4.2.0">
 </head>
 <body>
 
@@ -489,20 +489,20 @@
         <span class="tool-status-dot" id="tool-mode-dot"></span>
         <div><strong id="tool-mode-title">Checking active mode…</strong><small id="tool-mode-description">Rockstar verifies the route before each request.</small></div>
       </div>
-      <div class="tools-grid">
-        <button class="tool-card" type="button" data-tool-action="export-txt"><span>TXT</span><strong>Export chat</strong><small>Plain text</small></button>
-        <button class="tool-card" type="button" data-tool-action="export-md"><span>MD</span><strong>Export chat</strong><small>Markdown</small></button>
-        <button class="tool-card" type="button" data-tool-action="export-html"><span>HTML</span><strong>Export chat</strong><small>Standalone HTML</small></button>
-        <button class="tool-card" type="button" data-tool-action="export-json"><span>JSON</span><strong>Export chat</strong><small>Structured data</small></button>
-        <button class="tool-card" type="button" data-tool-action="print-pdf"><span>PDF</span><strong>Print / Save PDF</strong><small>Uses your browser print dialog</small></button>
-        <button class="tool-card" type="button" data-tool-action="web-search"><span>🌐</span><strong>Web search</strong><small>Live sources + citations</small></button>
-        <button class="tool-card" type="button" data-tool-action="image-generate"><span>🎨</span><strong>Generate image</strong><small>Connected image provider</small></button>
-        <button class="tool-card" type="button" data-tool-action="image-edit"><span>✏️</span><strong>Edit image</strong><small>Natural-language edits</small></button>
-        <button class="tool-card" type="button" data-tool-action="code-execute"><span>🧪</span><strong>Run code</strong><small>Sandboxed execution</small></button>
+      <div class="tools-grid" aria-label="Available tools">
+        <button class="tool-card" type="button" data-tool-action="export-txt"><span>TXT</span><strong>Export chat</strong><small>Plain text • Local</small></button>
+        <button class="tool-card" type="button" data-tool-action="export-md"><span>MD</span><strong>Export chat</strong><small>Markdown • Local</small></button>
+        <button class="tool-card" type="button" data-tool-action="export-html"><span>HTML</span><strong>Export chat</strong><small>Standalone • Local</small></button>
+        <button class="tool-card" type="button" data-tool-action="export-json"><span>JSON</span><strong>Export chat</strong><small>Structured • Local</small></button>
+        <button class="tool-card" type="button" data-tool-action="print-pdf"><span>PDF</span><strong>Print / Save PDF</strong><small>Browser print • Local</small></button>
+        <button class="tool-card" type="button" data-tool-action="web-search"><span>🌐</span><strong>Web search</strong><small>Live sources • Server</small></button>
+        <button class="tool-card" type="button" data-tool-action="image-generate"><span>🎨</span><strong>Generate image</strong><small>Real image provider</small></button>
+        <button class="tool-card" type="button" data-tool-action="image-edit"><span>✏️</span><strong>Edit image</strong><small>Real image editing</small></button>
+        <button class="tool-card" type="button" data-tool-action="code-execute"><span>🧪</span><strong>Run code</strong><small>Isolated sandbox</small></button>
         <button class="tool-card" type="button" data-tool-action="create-docx"><span>📄</span><strong>Create DOCX</strong><small>Real downloadable file</small></button>
         <button class="tool-card" type="button" data-tool-action="create-xlsx"><span>📊</span><strong>Create XLSX</strong><small>Real spreadsheet</small></button>
         <button class="tool-card" type="button" data-tool-action="create-pptx"><span>📽️</span><strong>Create PPTX</strong><small>Real presentation</small></button>
-        <button class="tool-card" type="button" data-tool-action="speak-last"><span>🎙️</span><strong>Speak last answer</strong><small>Server TTS</small></button>
+        <button class="tool-card" type="button" data-tool-action="speak-last"><span>🎙️</span><strong>Speak last answer</strong><small>Server TTS • Audio</small></button>
         <button class="tool-card" type="button" data-tool-action="share-chat"><span>🔗</span><strong>Secure share</strong><small>Authorized link</small></button>
         <button class="tool-card" type="button" data-tool-action="audit-log"><span>🔐</span><strong>Audit log</strong><small>Your tool activity</small></button>
         <button class="tool-card" type="button" data-tool-action="job-status"><span>🗂️</span><strong>Background jobs</strong><small>Persistent job status</small></button>
@@ -768,16 +768,16 @@
   </dialog>
 
   <!-- Client JavaScript Modules -->
-  <script src="/js/login-experience.js?v=4.1.0"></script>
-  <script src="/js/auth.js?v=4.1.0"></script>
-  <script src="/js/markdown.js?v=4.1.0"></script>
-  <script src="/js/storage.js?v=4.1.0"></script>
-  <script src="/js/astra-client.js?v=4.1.0"></script>
-  <script src="/js/local-engine.js?v=4.1.0"></script>
-  <script src="/js/ui.js?v=4.1.0"></script>
-  <script src="/js/composer.js?v=4.1.0"></script>
-  <script src="/js/settings.js?v=4.1.0"></script>
-  <script src="/js/tools.js?v=4.1.0"></script>
-  <script src="/js/app.js?v=4.1.0"></script>
+  <script src="/js/login-experience.js?v=4.2.0"></script>
+  <script src="/js/auth.js?v=4.2.0"></script>
+  <script src="/js/markdown.js?v=4.2.0"></script>
+  <script src="/js/storage.js?v=4.2.0"></script>
+  <script src="/js/astra-client.js?v=4.2.0"></script>
+  <script src="/js/local-engine.js?v=4.2.0"></script>
+  <script src="/js/ui.js?v=4.2.0"></script>
+  <script src="/js/composer.js?v=4.2.0"></script>
+  <script src="/js/settings.js?v=4.2.0"></script>
+  <script src="/js/tools.js?v=4.2.0"></script>
+  <script src="/js/app.js?v=4.2.0"></script>
 </body>
 </html>

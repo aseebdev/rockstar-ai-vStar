@@ -23,6 +23,15 @@ async function userAstraKey(req) {
   return decryptSecret(result.rows[0]?.astra_api_key_encrypted || '');
 }
 
+function limitAstraMessages(messages, maxMessages = 36) {
+  const list = Array.isArray(messages) ? messages : [];
+  if (list.length <= maxMessages) return list;
+  const firstUser = list.find(m => m?.role === 'user');
+  const tailCount = maxMessages - (firstUser ? 1 : 0);
+  const tail = list.slice(-Math.max(0, tailCount));
+  return firstUser && !tail.includes(firstUser) ? [firstUser, ...tail] : tail;
+}
+
 router.get('/capabilities', requireAuth, async (req, res, next) => {
   try {
     const hasKey = Boolean(await userAstraKey(req));
@@ -43,6 +52,7 @@ router.get('/capabilities', requireAuth, async (req, res, next) => {
         codeExecution: process.env.ENABLE_CODE_EXECUTION === 'true',
         voiceBrowser: true,
         voiceTts: Boolean(process.env.OPENAI_API_KEY),
+         voiceTranscription: Boolean(process.env.OPENAI_API_KEY),
         webSearch: Boolean(process.env.TAVILY_API_KEY),
         docx: true, xlsx: true, pptx: true,
         secureSharing: true, backgroundJobs: true, auditLogs: true
@@ -173,6 +183,9 @@ router.post('/chat',
   validateChatPayload,
   async (req, res) => {
   const { messages, model, temperature, systemPrompt, stream = true } = req.body;
+  // Astra/provider request safety: never forward an unbounded conversation history.
+  // The UI also compacts locally, but the server enforces the limit for every client.
+  const boundedMessages = limitAstraMessages(messages, parseInt(process.env.ASTRA_MAX_MESSAGES, 10) || 36);
   const apiKey = await userAstraKey(req);
 
   if (!astraService.isConfigured(apiKey)) {
@@ -230,7 +243,7 @@ router.post('/chat',
 
     await astraService.streamChatCompletion({
       apiKey,
-      messages,
+      boundedMessages,
       model,
       temperature,
       systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${ROCKSTAR_RUNTIME_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
@@ -278,7 +291,7 @@ router.post('/chat',
 
       await astraService.streamChatCompletion({
         apiKey,
-        messages,
+        boundedMessages,
         model,
         temperature,
         systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${ROCKSTAR_RUNTIME_CONTEXT}\n\n${systemPrompt || ''}`.trim(),

@@ -148,7 +148,13 @@ const MarkdownRenderer = (function () {
     // 7. Inline Code (`code`)
     processed = processed.replace(/`([^`\n]+)`/g, '<code>$1</code>');
 
-    // 8. Links ([text](url)) - with safe target="_blank"
+    // 8. Generated images — only permit Rockstar's authenticated file route.
+    processed = processed.replace(
+      /!\[([^\]]*)\]\((\/api\/tools\/files\/[A-Za-z0-9_-]+\?inline=1)\)/g,
+      '<div class="message-generated-media"><img src="$2" alt="$1" loading="lazy"></div>'
+    );
+
+    // 9. Links ([text](url)) - with safe target="_blank"
     processed = processed.replace(
       /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g,
       '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'

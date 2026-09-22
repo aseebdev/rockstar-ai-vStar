@@ -1209,3 +1209,78 @@ dialog.glass-dialog::backdrop {
 @keyframes bannerSettle { from { opacity: 0; transform: translateY(6px) scale(.99); } to { opacity: 1; transform: none; } }
 .composer-textarea::selection { background: rgba(124,58,237,.22); color: inherit; }
 .composer-textarea::-moz-selection { background: rgba(124,58,237,.22); color: inherit; }
+
+
+/* Rockstar AI v4.2 — polished tools workspace */
+dialog#tools-dialog.glass-dialog {
+  width: min(980px, calc(100vw - 32px));
+  max-width: 980px;
+  max-height: min(86vh, 900px);
+  overflow: hidden;
+}
+#tools-dialog .tools-dialog-body {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px;
+  max-height: calc(86vh - 76px);
+}
+#tools-dialog .tool-mode-card {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin-bottom: 18px;
+  backdrop-filter: blur(18px);
+}
+#tools-dialog .tools-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+#tools-dialog .tool-card {
+  min-width: 0;
+  min-height: 92px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 42px minmax(0,1fr);
+  grid-template-rows: auto auto;
+  column-gap: 11px;
+  align-items: center;
+  padding: 13px 14px;
+}
+#tools-dialog .tool-card > span {
+  grid-row: 1 / span 2;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+#tools-dialog .tool-card strong,
+#tools-dialog .tool-card small {
+  min-width: 0;
+  margin-top: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#tools-dialog .tool-card strong { white-space: nowrap; }
+#tools-dialog .tool-card small { white-space: nowrap; margin-top: 4px; }
+#tools-dialog .tool-card:disabled { opacity: .48; cursor: not-allowed; transform: none; }
+#tools-dialog .tool-notice { margin-top: 16px; }
+@media (max-width: 900px) {
+  dialog#tools-dialog.glass-dialog { width: min(760px, calc(100vw - 24px)); }
+  #tools-dialog .tools-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 560px) {
+  dialog#tools-dialog.glass-dialog { width: calc(100vw - 16px); max-height: 92vh; border-radius: 18px; }
+  #tools-dialog .tools-dialog-body { padding: 14px; max-height: calc(92vh - 68px); }
+  #tools-dialog .tools-grid { grid-template-columns: 1fr; gap: 9px; }
+  #tools-dialog .tool-card { min-height: 76px; }
+}
+
+/* Generated media inside assistant messages */
+.message-generated-media { margin-top: 12px; display: grid; gap: 10px; }
+.message-generated-media img { display:block; max-width:min(100%,720px); border-radius:16px; border:1px solid var(--border-glass); box-shadow:var(--shadow-md); }
+.message-generated-media .media-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.message-generated-media a { display:inline-flex; align-items:center; gap:6px; text-decoration:none; }

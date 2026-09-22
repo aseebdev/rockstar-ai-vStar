@@ -469,9 +469,69 @@
     return { id: 'offline', cloud: false, model: 'rockstar-core' };
   }
 
+  // Astra currently rejects oversized message histories. Keep the newest turns,
+  // while retaining the opening user request so long chats remain coherent.
+  function compactContext(messages, maxMessages = 36) {
+    const list = Array.isArray(messages) ? messages : [];
+    if (list.length <= maxMessages) return { messages: list, compacted: false };
+    const first = list.find(m => m.role === 'user');
+    const tail = list.slice(-(maxMessages - (first ? 1 : 0)));
+    const result = first && !tail.includes(first) ? [first, ...tail] : tail;
+    return { messages: result.slice(-maxMessages), compacted: true };
+  }
+
+  function looksLikeImageGeneration(text) {
+    const q = String(text || '').trim();
+    if (!q) return false;
+    return /\b(generate|create|draw|make|render|design|produce|show me)\b[\s\S]{0,140}\b(image|picture|photo|illustration|artwork|poster|wallpaper|logo|icon)\b/i.test(q)
+      || /\b(image|picture|photo|illustration|artwork|poster|wallpaper|logo|icon)\b[\s\S]{0,80}\b(of|for|showing)\b/i.test(q);
+  }
+
+  async function handleImageToolMessage(userText, attachments) {
+    const title = String(userText || 'Generated image').trim().slice(0, 35) || 'Generated image';
+    if (!activeConversationId) {
+      const conv = await Storage.createConversation(title, 'image-generation');
+      activeConversationId = conv.id;
+      if (mobileTitle) mobileTitle.textContent = title;
+      await loadConversations();
+    }
+    const userMsg = await Storage.addMessage({ conversationId: activeConversationId, role: 'user', content: userText });
+    UI.appendMessage(userMsg, true);
+    Composer.clear();
+    UI.showToast('Generating your image…', 'info', 2500);
+    try {
+      const img = attachments?.find(a => a.kind === 'image' && a.dataUrl);
+      const endpoint = img ? '/api/tools/image/edit' : '/api/tools/image/generate';
+      const payload = img ? { image: img.dataUrl, prompt: userText, conversationId: activeConversationId } : { prompt: userText, conversationId: activeConversationId };
+      const response = await fetch(endpoint, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw Object.assign(new Error(data?.error?.message || 'Image generation failed.'), { status: response.status });
+      const files = Array.isArray(data.images) ? data.images : [];
+      if (!files.length) throw new Error('The image provider returned no image.');
+      const markdown = files.map((f,i) => `![Rockstar AI generated image ${i+1}](${f.inlineUrl})`).join('\n\n') + '\n\n[Download image](' + files[0].downloadUrl + ')';
+      const assistant = await Storage.addMessage({ conversationId: activeConversationId, role:'assistant', content:markdown, model:'image-generation' });
+      UI.appendMessage(assistant, true);
+      await loadConversations();
+    } catch (err) {
+      const message = err?.status === 503
+        ? 'Image generation is not connected yet. Add OPENAI_API_KEY to the server environment, then retry. Rockstar will never fake an image result.'
+        : (err.message || 'Image generation failed.');
+      const assistant = await Storage.addMessage({ conversationId: activeConversationId, role:'assistant', content:`**Image tool:** ${message}`, model:'tool-error' });
+      UI.appendMessage(assistant, true);
+      UI.showToast(message, 'error', 6000);
+    }
+  }
+
   async function handleSendMessage(userText, attachments = []) {
     if ((!userText || !userText.trim()) && (!attachments || attachments.length === 0)) return;
     if (isStreaming) return;
+
+    // Tool-first routing: image requests are handled by the real image provider,
+    // not sent to the text model where it could incorrectly claim no image tool exists.
+    if (looksLikeImageGeneration(userText)) {
+      await handleImageToolMessage(userText, attachments);
+      return;
+    }
 
     const effectiveMode = getEffectiveMode();
     if (!effectiveMode.cloud) {
@@ -514,10 +574,12 @@
     UI.appendMessage(userMsg, true);
 
     const history = await Storage.getMessages(activeConversationId);
-    const apiMessages = history.map(m => ({
+    const context = compactContext(history, 36);
+    const apiMessages = context.messages.map(m => ({
       role: m.role,
       content: richMessagePayloads.has(m.id) ? richMessagePayloads.get(m.id) : m.content
     }));
+    if (context.compacted) UI.showToast('Long chat: older messages were trimmed to keep the provider context within its limit.', 'info', 3500);
 
     const assistantMsgId = 'temp_' + Date.now();
     UI.startStreamingAssistantMessage(assistantMsgId);
@@ -631,7 +693,9 @@
         UI.appendMessage(localAssistant, true);
         return;
       }
-      const apiMessages = remaining.map(m => ({ role: m.role, content: richMessagePayloads.has(m.id) ? richMessagePayloads.get(m.id) : m.content }));
+      const context = compactContext(remaining, 36);
+      const apiMessages = context.messages.map(m => ({ role: m.role, content: richMessagePayloads.has(m.id) ? richMessagePayloads.get(m.id) : m.content }));
+      if (context.compacted) UI.showToast('Long chat context trimmed for regeneration.', 'info', 3000);
       const assistantMsgId = 'temp_' + Date.now();
       UI.startStreamingAssistantMessage(assistantMsgId);
       Composer.setGenerating(true);

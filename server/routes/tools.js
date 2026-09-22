@@ -21,7 +21,7 @@ router.get('/status', requireAuth, async (req,res,next)=>{
       imageGeneration: Boolean(process.env.OPENAI_API_KEY),
       imageEditing: Boolean(process.env.OPENAI_API_KEY),
       codeExecution: envBool('ENABLE_CODE_EXECUTION', false) && Boolean(process.env.PISTON_BASE_URL || 'https://emkc.org/api/v2/piston'),
-      docx: true, xlsx: true, pptx: true, pdf: true, voiceTts: Boolean(process.env.OPENAI_API_KEY),
+      docx: true, xlsx: true, pptx: true, pdf: true, voiceTts: Boolean(process.env.OPENAI_API_KEY), voiceTranscription: Boolean(process.env.OPENAI_API_KEY),
       sharing: Boolean(getPool()), jobs: Boolean(getPool()), audit: Boolean(getPool())
     }});
   } catch(e){next(e)}
@@ -31,15 +31,51 @@ router.post('/web-search', rateLimit({windowMs:60000,max:20,keyFn:req=>req.user?
   try { const query=String(req.body?.query||'').trim(); if(!query) return res.status(400).json({error:{message:'Search query is required.'}}); const result=await tavilySearch({query,maxResults:req.body?.maxResults}); await audit(req,'web.search','search',null,{query,results:result.results.length}); res.json({ok:true,...result}); } catch(e){next(e)}
 });
 
+
+async function persistGeneratedImages(req, images, conversationId = null) {
+  const p = getPool();
+  if (!p) throw Object.assign(new Error('Database is not configured; generated images cannot be stored.'), { statusCode: 503 });
+  const files = [];
+  for (let i = 0; i < images.length; i++) {
+    const b64 = images[i]?.b64;
+    if (!b64) continue;
+    const buffer = Buffer.from(b64, 'base64');
+    if (buffer.length > 12 * 1024 * 1024) throw Object.assign(new Error('Generated image exceeds 12 MB.'), { statusCode: 413 });
+    const id = newId();
+    const filename = `rockstar-${Date.now()}-${i + 1}.png`;
+    await p.query(
+      'INSERT INTO generated_files (id,user_id,conversation_id,filename,mime_type,size_bytes,data,expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [id, req.user.sub, conversationId, filename, 'image/png', buffer.length, buffer, new Date(Date.now() + 7 * 86400000)]
+    );
+    files.push({ id, filename, mimeType: 'image/png', size: buffer.length, downloadUrl: `/api/tools/files/${id}`, inlineUrl: `/api/tools/files/${id}?inline=1`, revisedPrompt: images[i]?.revisedPrompt || null });
+  }
+  return files;
+}
+
 async function readDataUrl(dataUrl) {
   const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/s); if(!m) throw Object.assign(new Error('A valid image data URL is required.'),{statusCode:400});
   const b=Buffer.from(m[2],'base64'); if(b.length>8*1024*1024) throw Object.assign(new Error('Image exceeds 8 MB.'),{statusCode:413}); return {mime:m[1],buffer:b};
 }
 router.post('/image/generate', rateLimit({windowMs:60000,max:5,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{
-  try { const prompt=String(req.body?.prompt||'').trim(); if(!prompt) return res.status(400).json({error:{message:'Image prompt is required.'}}); const images=await openAIImage({prompt,size:req.body?.size,quality:req.body?.quality,background:req.body?.background,n:req.body?.n}); await audit(req,'image.generate','image',null,{count:images.length}); res.json({ok:true,images}); } catch(e){next(e)}
+  try {
+    const prompt=String(req.body?.prompt||'').trim();
+    if(!prompt) return res.status(400).json({error:{message:'Image prompt is required.'}});
+    const images=await openAIImage({prompt,size:req.body?.size,quality:req.body?.quality,background:req.body?.background,n:req.body?.n});
+    const files=await persistGeneratedImages(req,images,req.body?.conversationId||null);
+    await audit(req,'image.generate','image',null,{count:files.length});
+    res.json({ok:true,images:files});
+  } catch(e){next(e)}
 });
 router.post('/image/edit', rateLimit({windowMs:60000,max:5,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{
-  try { const {buffer,mime}=await readDataUrl(req.body?.image); const prompt=String(req.body?.prompt||'').trim(); if(!prompt) return res.status(400).json({error:{message:'Edit instruction is required.'}}); const images=await openAIImage({prompt,imageBuffer:buffer,imageMime:mime,size:req.body?.size,quality:req.body?.quality,background:req.body?.background,n:1}); await audit(req,'image.edit','image',null,{count:images.length}); res.json({ok:true,images}); } catch(e){next(e)}
+  try {
+    const {buffer,mime}=await readDataUrl(req.body?.image);
+    const prompt=String(req.body?.prompt||'').trim();
+    if(!prompt) return res.status(400).json({error:{message:'Edit instruction is required.'}});
+    const images=await openAIImage({prompt,imageBuffer:buffer,imageMime:mime,size:req.body?.size,quality:req.body?.quality,background:req.body?.background,n:1});
+    const files=await persistGeneratedImages(req,images,req.body?.conversationId||null);
+    await audit(req,'image.edit','image',null,{count:files.length});
+    res.json({ok:true,images:files});
+  } catch(e){next(e)}
 });
 
 router.post('/code/execute', rateLimit({windowMs:60000,max:10,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{
@@ -60,7 +96,7 @@ router.post('/files/create', requireAuth, async(req,res,next)=>{
 
 router.get('/files/:id', requireAuth, async(req,res,next)=>{
   const p=poolOr503(res); if(!p) return;
-  try { const r=await p.query('SELECT filename,mime_type,data,expires_at FROM generated_files WHERE id=$1 AND user_id=$2',[req.params.id,req.user.sub]); if(!r.rowCount) return res.status(404).json({error:{message:'File not found.'}}); const f=r.rows[0]; if(f.expires_at && new Date(f.expires_at)<new Date()) return res.status(410).json({error:{message:'File has expired.'}}); await audit(req,'file.download','file',req.params.id,{filename:f.filename}); res.setHeader('Content-Type',f.mime_type); res.setHeader('Content-Disposition',`attachment; filename="${String(f.filename).replace(/"/g,'')}"`); res.send(f.data); } catch(e){next(e)}
+  try { const r=await p.query('SELECT filename,mime_type,data,expires_at FROM generated_files WHERE id=$1 AND user_id=$2',[req.params.id,req.user.sub]); if(!r.rowCount) return res.status(404).json({error:{message:'File not found.'}}); const f=r.rows[0]; if(f.expires_at && new Date(f.expires_at)<new Date()) return res.status(410).json({error:{message:'File has expired.'}}); await audit(req,'file.download','file',req.params.id,{filename:f.filename}); res.setHeader('Content-Type',f.mime_type); const inline=String(req.query?.inline||'')==='1'; res.setHeader('Content-Disposition',`${inline?'inline':'attachment'}; filename="${String(f.filename).replace(/"/g,'')}"`); res.send(f.data); } catch(e){next(e)}
 });
 
 router.post('/share', requireAuth, async(req,res,next)=>{
@@ -76,6 +112,28 @@ router.post('/jobs', requireAuth, async(req,res,next)=>{
   const p=poolOr503(res); if(!p)return;
   try { const type=String(req.body?.type||''); if(!['file.create','web.search','code.execute','image.generate','image.edit'].includes(type)) return res.status(400).json({error:{message:'Unsupported job type.'}}); const id=newId(); await p.query('INSERT INTO jobs (id,user_id,type,status,payload) VALUES ($1,$2,$3,$4,$5)',[id,req.user.sub,type,'queued',req.body?.payload||{}]); await audit(req,'job.create','job',id,{type}); processJob(id,req.user.sub).catch(()=>{}); res.status(202).json({ok:true,job:{id,status:'queued'}}); }catch(e){next(e)}
 });
+
+async function processQueuedJobs(limit = 3) {
+  const p = getPool();
+  if (!p) return 0;
+  const q = await p.query("SELECT id,user_id FROM jobs WHERE status='queued' ORDER BY created_at ASC LIMIT $1", [Math.min(Math.max(Number(limit)||3,1),10)]);
+  let processed = 0;
+  for (const row of q.rows) {
+    try { await processJob(row.id, row.user_id); processed++; } catch (_) {}
+  }
+  return processed;
+}
+
+router.get('/jobs/worker', async(req,res,next)=>{
+  try {
+    const secret=String(process.env.CRON_SECRET||'');
+    const auth=String(req.headers.authorization||'');
+    if(!secret || auth !== `Bearer ${secret}`) return res.status(401).json({error:{message:'Unauthorized worker request.'}});
+    const processed=await processQueuedJobs(5);
+    res.json({ok:true,processed});
+  }catch(e){next(e)}
+});
+
 router.get('/jobs/:id', requireAuth, async(req,res,next)=>{ const p=poolOr503(res);if(!p)return;try{const r=await p.query('SELECT id,type,status,result,error,created_at AS "createdAt",started_at AS "startedAt",finished_at AS "finishedAt" FROM jobs WHERE id=$1 AND user_id=$2',[req.params.id,req.user.sub]);if(!r.rowCount)return res.status(404).json({error:{message:'Job not found.'}});res.json({ok:true,job:r.rows[0]});}catch(e){next(e)} });
 
 async function processJob(id,userId){
@@ -84,6 +142,28 @@ async function processJob(id,userId){
 
 router.get('/audit', requireAuth, async(req,res,next)=>{const p=poolOr503(res);if(!p)return;try{const r=await p.query('SELECT action,resource_type AS "resourceType",resource_id AS "resourceId",metadata,created_at AS "createdAt" FROM audit_logs WHERE user_id=$1 ORDER BY created_at DESC LIMIT 200',[req.user.sub]);res.json({ok:true,logs:r.rows});}catch(e){next(e)}});
 
+
+router.post('/voice/transcribe', rateLimit({windowMs:60000,max:10,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{
+  try {
+    const key=process.env.OPENAI_API_KEY;
+    if(!key) return res.status(503).json({error:{message:'Voice transcription is not configured. Add OPENAI_API_KEY.'}});
+    const m=String(req.body?.audio||'').match(/^data:([^;]+);base64,(.+)$/s);
+    if(!m) return res.status(400).json({error:{message:'A recorded audio data URL is required.'}});
+    const buffer=Buffer.from(m[2],'base64');
+    if(!buffer.length) return res.status(400).json({error:{message:'The recording is empty.'}});
+    if(buffer.length>8*1024*1024) return res.status(413).json({error:{message:'The recording exceeds 8 MB.'}});
+    const form=new FormData();
+    form.append('file',new Blob([buffer],{type:m[1]||'audio/webm'}),'rockstar-voice.webm');
+    form.append('model',process.env.OPENAI_TRANSCRIBE_MODEL||'gpt-4o-mini-transcribe');
+    if(req.body?.language) form.append('language',String(req.body.language).slice(0,10));
+    const base=process.env.OPENAI_BASE_URL||'https://api.openai.com/v1';
+    const response=await fetch(`${base}/audio/transcriptions`,{method:'POST',headers:{Authorization:`Bearer ${key}`},body:form});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw Object.assign(new Error(data?.error?.message||`Transcription failed (${response.status})`),{statusCode:response.status});
+    await audit(req,'voice.transcribe','audio',null,{bytes:buffer.length,model:process.env.OPENAI_TRANSCRIBE_MODEL||'gpt-4o-mini-transcribe'});
+    res.json({ok:true,text:String(data.text||'').trim()});
+  }catch(e){next(e)}
+});
 router.post('/voice/tts', rateLimit({windowMs:60000,max:10,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{try{const key=process.env.OPENAI_API_KEY;if(!key)return res.status(503).json({error:{message:'TTS is not configured. Add OPENAI_API_KEY.'}});const text=String(req.body?.text||'').trim();if(!text||text.length>4096)return res.status(400).json({error:{message:'Text must be 1–4096 characters.'}});const base=process.env.OPENAI_BASE_URL||'https://api.openai.com/v1';const response=await fetch(`${base}/audio/speech`,{method:'POST',headers:{Authorization:`Bearer ${key}`,'content-type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_TTS_MODEL||'gpt-4o-mini-tts',voice:req.body?.voice||'alloy',input:text,response_format:'mp3'})});if(!response.ok){const d=await response.json().catch(()=>({}));throw Object.assign(new Error(d?.error?.message||`TTS failed (${response.status})`),{statusCode:response.status});}const buf=Buffer.from(await response.arrayBuffer());await audit(req,'voice.tts','audio',null,{chars:text.length});res.setHeader('Content-Type','audio/mpeg');res.send(buf);}catch(e){next(e)}});
 
 module.exports=router;

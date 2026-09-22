@@ -139,7 +139,7 @@ The multimodal tool layer is now implemented as backend-controlled adapters. The
 Set `TAVILY_API_KEY`. Rockstar uses the server-side Tavily search adapter, records an audit event, and returns source URLs/titles/dates. Current-oriented chat requests automatically attempt the web tool; if it is unavailable, Rockstar tells the model not to claim live verification.
 
 ### 2. Real image generation + editing
-Set `OPENAI_API_KEY`. The server exposes `/api/tools/image/generate` and `/api/tools/image/edit`, with size/quality/background controls. Images are returned as base64 only to the authenticated requesting browser.
+Set `OPENAI_API_KEY`. The server exposes `/api/tools/image/generate` and `/api/tools/image/edit`, with size/quality/background controls. Generated images are persisted as authenticated generated files and can be rendered inline or downloaded by the owning account.
 
 ### 3. Secure code execution
 Set `ENABLE_CODE_EXECUTION=true` and configure `PISTON_BASE_URL` to a self-hosted/authorized Piston sandbox. Optional `PISTON_API_KEY` is supported. The application never executes arbitrary user code inside the Rockstar Node process.
@@ -148,13 +148,13 @@ Set `ENABLE_CODE_EXECUTION=true` and configure `PISTON_BASE_URL` to a self-hoste
 DOCX and PPTX are generated as OOXML packages and XLSX uses the existing `xlsx` package. PDF is generated server-side and stored as an authenticated generated file. Generated files are persisted in PostgreSQL and downloads require the owning session.
 
 ### 5. Voice/TTS
-Browser speech recognition remains available for input. Server TTS is available through `/api/tools/voice/tts` when `OPENAI_API_KEY` is configured. The browser receives the generated audio only for the authenticated request.
+Voice input supports microphone recording with server transcription through `/api/tools/voice/transcribe`; browser speech recognition remains an optional fallback. Server TTS is available through `/api/tools/voice/tts` when `OPENAI_API_KEY` is configured. Recordings are not persisted by Rockstar after transcription.
 
 ### 6. Secure conversation sharing
 `POST /api/tools/share` creates a random, hashed share token. The token can expire or be revoked. Shared conversations are read-only and expose only the selected conversation.
 
 ### 7. Background jobs
-`jobs` are persisted in PostgreSQL with queued/running/completed/failed states and timestamps. `/api/tools/jobs` creates work and `/api/tools/jobs/:id` returns persistent status. The current implementation starts work immediately from the serverless request; for long-running production workloads, point the same job table at a dedicated worker.
+`jobs` are persisted in PostgreSQL with queued/running/completed/failed states and timestamps. `/api/tools/jobs` creates work and `/api/tools/jobs/:id` returns persistent status. Jobs are persisted in PostgreSQL. On Vercel, `/api/tools/jobs/worker` is protected by `CRON_SECRET` and is scheduled every minute, so queued work can continue after the original HTTP request ends. Local/self-hosted requests may still opportunistically process jobs immediately.
 
 ### 8. Audit + download authorization
 Tool calls, share creation/revocation, file creation/download, code execution, image actions, web search and TTS are recorded in `audit_logs`. Generated-file downloads require an authenticated owner session and an unexpired file record.
@@ -168,9 +168,12 @@ TAVILY_API_KEY=
 OPENAI_API_KEY=
 OPENAI_IMAGE_MODEL=gpt-image-2
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
+OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
+ASTRA_MAX_MESSAGES=36
 ENABLE_CODE_EXECUTION=false
 PISTON_BASE_URL=https://your-authorized-piston-host/api/v2/piston
 PISTON_API_KEY=
+CRON_SECRET=
 PUBLIC_BASE_URL=https://your-domain.example
 ```
 
