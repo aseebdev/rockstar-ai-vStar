@@ -6,65 +6,85 @@
 /* ==============================================================================
    SIDEBAR
    ============================================================================== */
-#sidebar {
-  width: var(--sidebar-width);
-  height: 100%;
-  min-width: 0;
-  overflow: hidden;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-glass);
-  backdrop-filter: var(--backdrop-blur);
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  transition: transform var(--duration-normal) var(--ease-smooth), width var(--duration-normal) var(--ease-smooth);
-  z-index: 20;
-  position: relative;
-}
+@media (min-width: 769px) {
+  #sidebar {
+    width: var(--sidebar-width);
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-glass);
+    backdrop-filter: var(--backdrop-blur);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width var(--duration-normal) var(--ease-smooth), opacity 180ms ease, border-color 180ms ease;
+    z-index: 20;
+    position: relative;
+  }
 
-#sidebar.collapsed {
-  transform: translateX(-18px);
-  width: 0;
-  flex-basis: 0;
-  opacity: 0;
-  pointer-events: none;
-  border-right-color: transparent;
-}
+  /* Desktop-only collapse: no transform, so the main area never exposes a
+     clipped/half-visible sidebar edge during the transition. */
+  #sidebar.collapsed {
+    width: 0;
+    flex-basis: 0;
+    opacity: 0;
+    pointer-events: none;
+    border-right-color: transparent;
+  }
 
-/* Desktop restore button: appears only when the sidebar is fully collapsed. */
-.desktop-sidebar-toggle {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 30;
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-glass-strong);
-  border-radius: 11px;
-  background: var(--bg-glass-card);
-  color: var(--text-secondary);
-  backdrop-filter: var(--backdrop-blur);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  opacity: 0;
-  transform: translateX(-8px) scale(.94);
-  pointer-events: none;
-  transition: opacity 180ms ease, transform 220ms var(--ease-smooth), background 160ms ease, color 160ms ease;
-}
+  /* Clean desktop restore handle. Fixed to the viewport so it cannot be
+     clipped by the chat area's overflow container. */
+  .desktop-sidebar-toggle {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    z-index: 100;
+    width: 38px;
+    height: 76px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-glass-strong);
+    border-left: 0;
+    border-radius: 0 16px 16px 0;
+    background: color-mix(in srgb, var(--bg-glass-card) 88%, transparent);
+    color: var(--text-secondary);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 10px 30px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.08);
+    cursor: pointer;
+    opacity: 0;
+    transform: translate(-14px, -50%) scale(.96);
+    pointer-events: none;
+    transition: opacity 220ms ease, transform 260ms var(--ease-smooth), background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
 
-.desktop-sidebar-toggle:hover {
-  background: var(--bg-surface-hover);
-  color: var(--text-primary);
-  transform: translateX(0) scale(1);
-}
+  .desktop-sidebar-toggle::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 50%;
+    width: 3px;
+    height: 26px;
+    border-radius: 99px;
+    background: var(--accent-primary);
+    opacity: .85;
+    transform: translateY(-50%);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
 
-#sidebar.collapsed ~ #main-chat-area .desktop-sidebar-toggle {
-  opacity: 1;
-  transform: translateX(0) scale(1);
-  pointer-events: auto;
+  .desktop-sidebar-toggle:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-primary);
+    transform: translate(0, -50%) scale(1);
+    box-shadow: 0 14px 34px rgba(0,0,0,.24), 0 0 18px var(--accent-glow);
+  }
+
+  #sidebar.collapsed ~ #main-chat-area .desktop-sidebar-toggle {
+    opacity: 1;
+    transform: translate(0, -50%) scale(1);
+    pointer-events: auto;
+  }
 }
 
 .sidebar-header {
