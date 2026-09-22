@@ -1,0 +1,34 @@
+{
+  "name": "rockstar-ai",
+  "version": "2.9.0",
+  "description": "Rockstar AI public BYOK chat interface with accounts, cloud history, PostgreSQL, and Astra API",
+  "main": "server/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node test/test-suite.js",
+    "check": "node test/validate-syntax.js"
+  },
+  "keywords": [
+    "rockstar-ai",
+    "ai",
+    "chat",
+    "byok",
+    "postgresql",
+    "astra",
+    "nodejs",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.16.3",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.8.0",
+    "xlsx": "^0.18.5",
+    "adm-zip": "^0.5.16"
+  }
+}

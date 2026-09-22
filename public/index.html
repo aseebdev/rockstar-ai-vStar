@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark-glass">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Rockstar AI - Personal AI interface powered by Astra">
+  <meta name="theme-color" content="#090b11">
+  <title>Rockstar AI</title>
+
+  <!-- Design Tokens & CSS Modules -->
+  <link rel="stylesheet" href="/css/tokens.css?v=2.7.0">
+  <link rel="stylesheet" href="/css/main.css?v=2.7.0">
+  <link rel="stylesheet" href="/css/components.css?v=2.7.0">
+  <link rel="stylesheet" href="/css/markdown.css?v=2.7.0">
+</head>
+<body>
+
+  <!-- Login-screen music: place rraudio.mp3 in the project root. The server exposes it at /rraudio.mp3. -->
+  <audio id="login-music" preload="auto" loop aria-hidden="true">
+    <source src="/rraudio.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Post-login welcome animation -->
+  <div id="welcome-overlay" class="welcome-overlay hidden" aria-hidden="true">
+    <div class="welcome-glow" aria-hidden="true"></div>
+    <div class="welcome-content">
+      <div class="welcome-mark" aria-hidden="true">✦</div>
+      <p class="welcome-eyebrow">ASEEBDEV • ROCKSTAR AI</p>
+      <h1 id="welcome-typing" class="welcome-title"></h1>
+      <div class="welcome-cursor" aria-hidden="true"></div>
+      <p id="welcome-motivation" class="welcome-motivation"></p>
+      <p id="welcome-subtitle" class="welcome-subtitle">Your workspace is ready.</p>
+    </div>
+  </div>
+
+  <!-- Authentication Gate -->
+  <section id="auth-screen" class="auth-screen" aria-label="Rockstar AI authentication">
+    <div class="auth-card glass-panel">
+      <div class="auth-brand">
+        <div class="rockstar-mark">✦</div>
+        <div>
+          <div class="auth-brand-name">ROCKSTAR AI</div>
+          <div class="auth-brand-sub">Your AI. Your account. Your credits.</div>
+        </div>
+      </div>
+
+      <h1 id="auth-title">Welcome back</h1>
+      <p class="auth-subtitle">Sign in to access your private AI workspace.</p>
+
+      <form id="auth-form" class="auth-form">
+        <div id="auth-name-group" class="form-group hidden">
+          <label class="form-label" for="auth-name">Name</label>
+          <input id="auth-name" class="form-input" type="text" maxlength="60" autocomplete="name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="auth-email">Email</label>
+          <input id="auth-email" class="form-input" type="email" maxlength="160" autocomplete="email" required placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="auth-password">Password</label>
+          <input id="auth-password" class="form-input" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters">
+        </div>
+        <div id="auth-confirm-group" class="form-group hidden">
+          <label class="form-label" for="auth-confirm-password">Confirm password</label>
+          <input id="auth-confirm-password" class="form-input" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="Repeat your password">
+        </div>
+        <div id="auth-error" class="auth-error" role="alert"></div>
+        <button id="auth-submit" class="btn btn-primary auth-submit" type="submit">Sign In</button>
+      </form>
+
+      <div class="auth-switch-row">
+        <span id="auth-switch-text">New to Rockstar AI?</span>
+        <button id="auth-switch" class="auth-switch" type="button">Create account</button>
+      </div>
+
+      <div class="auth-byok-note">
+        🔐 AI usage is <strong>BYOK</strong>: every user supplies their own Astra API key.
+        Your key is encrypted and saved to your account until you remove it.
+      </div>
+    </div>
+  </section>
+
+  <!-- Root Application Container -->
+  <div id="app-container" class="hidden">
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+    <!-- Sidebar Landmark -->
+    <aside id="sidebar" role="complementary" aria-label="Conversation History and Navigation">
+      <!-- Sidebar Header -->
+      <div class="sidebar-header">
+        <a href="#" class="brand" title="Rockstar AI">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <span>Rockstar AI</span>
+        </a>
+
+        <div class="sidebar-actions">
+          <button type="button" class="btn-icon" data-action="toggle-sidebar" title="Collapse sidebar" aria-label="Collapse sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="9" y1="3" x2="9" y2="21"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- New Chat Button -->
+      <button type="button" class="btn-new-chat" data-action="new-chat" title="Start new conversation (Ctrl+N)">
+        <div class="btn-new-chat-left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>New Chat</span>
+        </div>
+        <span class="shortcut-badge">Ctrl N</span>
+      </button>
+
+      <!-- Sidebar Search -->
+      <div class="sidebar-search">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-conversations" class="search-input" placeholder="Search chats (Ctrl+K)..." aria-label="Search conversations">
+          <button type="button" id="clear-search-btn" class="search-clear" title="Clear search" aria-label="Clear search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- History Container -->
+      <nav id="conversation-list" class="sidebar-history" aria-label="Chat history">
+        <!-- Dynamically populated grouped chat items -->
+      </nav>
+
+      <!-- Account Area -->
+      <div class="account-bar" id="account-bar">
+        <button type="button" class="account-button" id="btn-account" title="Open account">
+          <span id="account-avatar" class="account-avatar">R</span>
+          <span class="account-copy">
+            <strong id="account-name">Account</strong>
+            <small id="account-usage">Loading usage…</small>
+          </span>
+        </button>
+        <button type="button" class="btn-icon" id="btn-logout" title="Log out" aria-label="Log out">↪</button>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="model-indicator" title="Selected Model & Connection">
+          <div class="model-pill">
+            <span id="connection-status-dot" class="status-dot unconfigured" aria-hidden="true"></span>
+            <span id="sidebar-model-name">gpt-5.6-luna</span>
+          </div>
+          <button type="button" class="btn-icon" data-action="open-settings" data-tab="api" title="Configure Model & API" style="width: 24px; height: 24px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <div class="sidebar-bottom-controls">
+          <select id="sidebar-theme-select" class="theme-select" aria-label="Switch theme">
+            <option value="dark-glass">Dark Glass</option>
+            <option value="light-glass">Light Glass</option>
+            <option value="midnight">Midnight</option>
+            <option value="amoled">AMOLED Black</option>
+            <option value="aurora">Aurora</option>
+            <option value="rose">Rose</option>
+            <option value="forest">Forest</option>
+            <option value="solar">Solar</option>
+            <option value="graphite">Graphite</option>
+          </select>
+
+          <button type="button" class="btn-icon" data-action="open-settings" data-tab="appearance" title="Settings" aria-label="Open settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+
+          <button type="button" class="btn-icon" data-action="open-about" title="About Rockstar AI" aria-label="About Rockstar AI">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Landmark -->
+    <main id="main-chat-area" role="main">
+
+      <!-- Mobile Header -->
+      <header class="mobile-header">
+        <button type="button" class="btn-icon" data-action="toggle-sidebar" aria-label="Open sidebar">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <span id="mobile-active-title" class="mobile-title">New Chat</span>
+        <button type="button" class="btn-icon" data-action="new-chat" aria-label="New chat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Scrollable Message Area -->
+      <div id="chat-window" class="chat-window" tabindex="0" aria-label="Conversation messages">
+        <div id="messages-inner" class="chat-inner">
+
+          <!-- Empty State (Welcome View) -->
+          <div id="empty-state" class="empty-state">
+            <div class="empty-state-badge" aria-hidden="true">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </div>
+            <h1 class="empty-state-title">How can Rockstar help you today?</h1>
+            <p class="empty-state-subtitle">
+              A secure AI workspace where every user connects their own Astra API key.
+            </p>
+
+            <div class="suggestion-grid">
+              <div class="suggestion-card" data-prompt="Explain quantum computing in clear, simple terms with an intuitive analogy.">
+                <div class="suggestion-card-title">Explain quantum computing</div>
+                <div class="suggestion-card-desc">Clear, intuitive breakdown with real-world analogies</div>
+              </div>
+
+              <div class="suggestion-card" data-prompt="Write a high-performance Node.js function to stream large JSON files without exceeding memory limits.">
+                <div class="suggestion-card-title">Stream large JSON in Node.js</div>
+                <div class="suggestion-card-desc">Memory-efficient streaming pipelines and buffers</div>
+              </div>
+
+              <div class="suggestion-card" data-prompt="Design a clean, RESTful API specification for an autonomous task management system.">
+                <div class="suggestion-card-title">Design a RESTful API</div>
+                <div class="suggestion-card-desc">Best practices for endpoints, verbs, and payloads</div>
+              </div>
+
+              <div class="suggestion-card" data-prompt="Compare the architecture tradeoffs between microservices, modular monoliths, and serverless.">
+                <div class="suggestion-card-title">Architecture tradeoffs</div>
+                <div class="suggestion-card-desc">Microservices vs. modular monoliths vs. serverless</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Floating Scroll to Bottom Button -->
+        <button type="button" id="scroll-bottom-btn" class="scroll-bottom-btn hidden" title="Scroll to bottom" aria-label="Scroll to bottom">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Bottom Floating Composer -->
+      <div class="composer-wrapper">
+        <div id="key-required-banner" class="key-required-banner" role="status">
+          <span class="key-required-icon">✦</span>
+          <span class="key-banner-copy"><strong data-key-banner-title>Rockstar Core</strong><span data-key-banner-text> You can chat without an Astra key. Add one anytime to unlock the external model.</span></span>
+          <button type="button" class="btn btn-secondary btn-key-required" data-action="open-settings" data-tab="api">Add key</button>
+          <button type="button" class="key-banner-close" aria-label="Hide key status">×</button>
+        </div>
+        <div class="composer-card">
+          <div class="composer-inner">
+            <div id="composer-attachments" class="composer-attachments hidden" aria-label="Attached files"></div>
+            <textarea
+              id="composer-textarea"
+              class="composer-textarea"
+              placeholder="Ask Rockstar Core anything..."
+              rows="1"
+              aria-label="Message input"
+            ></textarea>
+
+            <div class="composer-bottom-bar">
+              <div class="composer-left-controls">
+                <input id="composer-file-input" class="hidden" type="file" multiple accept="image/*,.txt,.md,.markdown,.json,.csv,.tsv,.js,.jsx,.mjs,.cjs,.ts,.tsx,.html,.css,.scss,.less,.xml,.yaml,.yml,.sql,.py,.java,.c,.cpp,.h,.hpp,.cs,.php,.rb,.go,.rs,.sh,.bat,.ps1,.env,.log,.pdf,.docx,.xls,.xlsx,.pptx">
+                <button type="button" id="btn-attach-file" class="composer-tool-btn" title="Attach image or text/code file" aria-label="Attach file">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                  </svg>
+                  <span>Attach</span>
+                </button>
+                <div class="composer-meta">
+                  <span id="char-count" class="char-count">0 chars</span>
+                  <span id="token-count" class="token-count">~0 tokens</span>
+                </div>
+              </div>
+
+              <div class="composer-buttons">
+                <button type="button" id="btn-send" class="btn-send" title="Send message (Enter)" aria-label="Send message" disabled>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                  </svg>
+                </button>
+
+                <button type="button" id="btn-stop" class="btn-stop hidden" title="Stop generating (Esc)" aria-label="Stop generation">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="composer-disclaimer">
+          Images and text/code files can be attached. Rockstar can make mistakes—verify critical facts.
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Settings Dialog (<dialog>) -->
+  <dialog id="settings-dialog" class="glass-dialog" aria-labelledby="settings-dialog-title">
+    <div class="dialog-header">
+      <h2 id="settings-dialog-title" class="dialog-title">Settings</h2>
+      <button type="button" class="btn-icon" data-action="close-settings" title="Close" aria-label="Close dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="dialog-body">
+      <!-- Tabs Navigation -->
+      <div class="tab-list" role="tablist">
+        <button type="button" class="tab-btn active" data-tab="appearance" role="tab">Appearance</button>
+        <button type="button" class="tab-btn" data-tab="chat" role="tab">Chat</button>
+        <button type="button" class="tab-btn" data-tab="api" role="tab">API & Model</button>
+        <button type="button" class="tab-btn" data-tab="data" role="tab">Data & Backup</button>
+      </div>
+
+      <!-- Tab 1: Appearance -->
+      <div id="tab-appearance" class="tab-content active" role="tabpanel">
+        <div class="form-group">
+          <label for="settings-theme" class="form-label">Theme</label>
+          <select id="settings-theme" class="form-select">
+            <option value="dark-glass">Dark Glass (Default liquid glass)</option>
+            <option value="light-glass">Light Glass (Clean bright frosted)</option>
+            <option value="midnight">Midnight (Oceanic deep slate)</option>
+            <option value="amoled">AMOLED (True black for OLED)</option>
+            <option value="aurora">Aurora (Violet + Teal)</option>
+            <option value="rose">Rose (Soft crimson)</option>
+            <option value="forest">Forest (Emerald)</option>
+            <option value="solar">Solar (Warm light)</option>
+            <option value="graphite">Graphite (Neutral dark)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="settings-font-size" class="form-label">Font Scale</label>
+          <select id="settings-font-size" class="form-select">
+            <option value="compact">Compact (13.5px)</option>
+            <option value="default">Default (15px)</option>
+            <option value="large">Large (16.5px)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Tab 2: Chat Behavior -->
+      <div id="tab-chat" class="tab-content" role="tabpanel">
+        <div class="form-group form-toggle">
+          <div>
+            <label for="settings-enter-send" class="form-label">Press Enter to Send</label>
+            <div class="form-desc">When disabled, use Shift+Enter or click the send button.</div>
+          </div>
+          <input type="checkbox" id="settings-enter-send" checked style="width: 18px; height: 18px;">
+        </div>
+
+        <div class="form-group form-toggle">
+          <div>
+            <label for="settings-auto-scroll" class="form-label">Auto-scroll during response</label>
+            <div class="form-desc">Smoothly scrolls to the latest token as it streams in.</div>
+          </div>
+          <input type="checkbox" id="settings-auto-scroll" checked style="width: 18px; height: 18px;">
+        </div>
+
+        <div class="form-group form-toggle">
+          <div>
+            <label for="settings-timestamps" class="form-label">Show Message Timestamps</label>
+            <div class="form-desc">Display time indicators above messages.</div>
+          </div>
+          <input type="checkbox" id="settings-timestamps" checked style="width: 18px; height: 18px;">
+        </div>
+
+        <div class="form-group">
+          <label for="settings-system-prompt" class="form-label">Custom System Persona</label>
+          <div class="form-desc">Defines Astra's personality, formatting rules, or specialized role.</div>
+          <textarea id="settings-system-prompt" class="form-textarea" placeholder="You are Astra AI, a thoughtful, precise, and helpful AI assistant..."></textarea>
+        </div>
+      </div>
+
+      <!-- Tab 3: API & Models -->
+      <div id="tab-api" class="tab-content" role="tabpanel">
+        <div class="form-group">
+          <label for="settings-astra-key" class="form-label">Your Astra API Key</label>
+          <div class="api-key-row">
+            <input id="settings-astra-key" class="form-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your own Astra key">
+            <button type="button" id="toggle-astra-key" class="btn btn-secondary api-key-toggle">Show</button>
+          </div>
+          <div id="astra-key-status" class="form-desc">No Astra key saved yet</div>
+          <div class="form-desc">Your key is encrypted at rest in your Rockstar account and is never displayed back after saving. You only need to add it once. You can replace or remove it anytime.</div>
+          <button type="button" id="btn-remove-astra-key" class="btn btn-danger" style="margin-top: var(--space-2);">Remove saved Astra key</button>
+        </div>
+
+
+        <div class="form-group">
+          <label for="settings-model" class="form-label">Active AI Model</label>
+          <input id="model-search" class="form-input" type="search" placeholder="Search available models..." autocomplete="off" style="margin-bottom: var(--space-2);">
+          <select id="settings-model" class="form-select">
+            <option value="gpt-5.6-luna">Loading available Astra models...</option>
+          </select>
+          <div id="model-select-desc" class="form-desc">Only models enabled for your local app are shown.</div>
+        </div>
+
+        <div class="diagnostic-box">
+          <div class="diagnostic-status">
+            <span>Astra Gateway Diagnostic</span>
+          </div>
+          <p class="form-desc" style="margin-bottom: var(--space-3);">
+            Verify your own Astra API key and measure the gateway roundtrip.
+          </p>
+          <button type="button" id="btn-test-connection" class="btn btn-secondary">
+            Test Connection
+          </button>
+          <div id="connection-diagnostic-box" class="hidden" style="margin-top: var(--space-3); font-size: var(--text-sm);">
+            <div id="diagnostic-result-text">Testing...</div>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--space-4); padding: var(--space-3); border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.25); font-size: var(--text-xs); color: var(--text-secondary);">
+          <strong style="color: var(--text-primary);">🔒 BYOK Security:</strong> Your Astra key is encrypted before it is stored against your account. Rockstar uses it only when you request Astra, and you can remove it at any time.
+        </div>
+      </div>
+
+      <!-- Tab 4: Data & Backup -->
+      <div id="tab-data" class="tab-content" role="tabpanel">
+        <div class="form-group">
+          <label class="form-label">Export Conversations</label>
+          <div class="form-desc">Download a complete JSON backup of all your conversations and messages.</div>
+          <button type="button" id="btn-export-data" class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export to JSON
+          </button>
+        </div>
+
+        <div class="form-group" style="margin-top: var(--space-5);">
+          <label class="form-label">Import Conversations</label>
+          <div class="form-desc">Restore or merge conversations from a previously exported JSON backup.</div>
+          <input type="file" id="import-file-input" accept=".json" class="hidden">
+          <button type="button" id="btn-import-data" class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Import JSON Backup
+          </button>
+        </div>
+
+        <div class="form-group" style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--border-glass);">
+          <label class="form-label" style="color: var(--danger);">Danger Zone</label>
+          <div class="form-desc">Permanently wipe all conversation history and messages from your local browser storage.</div>
+          <button type="button" id="btn-clear-all-data" class="btn btn-danger">
+            Clear All History
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-secondary" data-action="close-settings">Cancel</button>
+      <button type="button" id="btn-save-settings" class="btn btn-primary">Save Changes</button>
+    </div>
+  </dialog>
+
+  <!-- Rename Conversation Dialog (<dialog>) -->
+  <dialog id="rename-dialog" class="glass-dialog" aria-labelledby="rename-dialog-title">
+    <div class="dialog-header">
+      <h2 id="rename-dialog-title" class="dialog-title">Rename Conversation</h2>
+      <button type="button" class="btn-icon" data-action="close-rename" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="dialog-body">
+      <div class="form-group">
+        <label for="rename-input" class="form-label">Conversation Title</label>
+        <input type="text" id="rename-input" class="form-input" maxlength="100">
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-secondary" data-action="close-rename">Cancel</button>
+      <button type="button" id="btn-save-rename" class="btn btn-primary">Save</button>
+    </div>
+  </dialog>
+
+  <!-- About Dialog -->
+  <dialog id="about-dialog" class="glass-dialog" aria-labelledby="about-dialog-title">
+    <div class="dialog-header">
+      <h2 id="about-dialog-title" class="dialog-title">About Rockstar AI</h2>
+      <button type="button" class="btn-icon" data-action="close-about" aria-label="Close">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="creator-card">
+        <div class="creator-avatar" aria-hidden="true">RA</div>
+        <div>
+          <h3>Abdul Aseeb</h3>
+          <p>Full-Stack MERN Developer • Cloud + AI Integration</p>
+          <a href="https://www.linkedin.com/in/aseebdev/" target="_blank" rel="noopener noreferrer">LinkedIn · linkedin.com/in/aseebdev</a>
+        </div>
+      </div>
+
+      <p class="about-copy">
+        Rockstar AI is a personal AI interface created by <strong>Aseebdev (Abdul Aseeb)</strong>, focused on a clean ChatGPT-style experience, secure server-side architecture, streaming responses, account-based cloud history, and Bring Your Own Key (BYOK).
+      </p>
+
+      <div class="about-grid">
+        <div><strong>Stack</strong><span>Node.js • Express • PostgreSQL</span></div>
+        <div><strong>AI</strong><span>Astra API • BYOK</span></div>
+        <div><strong>Storage</strong><span>Cloud database + local cache</span></div>
+        <div><strong>Focus</strong><span>MERN • Cloud • AI</span></div>
+      </div>
+
+      <div class="creator-links">
+        <a href="https://www.linkedin.com/in/aseebdev/" target="_blank" rel="noopener noreferrer">View LinkedIn profile ↗</a>
+      </div>
+
+      <div class="secret-note" aria-label="personal note">A small personal note from Aseeb: I love my brother Abdul Ajmal and my future wife Princy / Pathu. ❤️</div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-primary" data-action="close-about">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Account Dialog -->
+  <dialog id="account-dialog" class="glass-dialog" aria-labelledby="account-dialog-title">
+    <div class="dialog-header">
+      <h2 id="account-dialog-title" class="dialog-title">Your Account</h2>
+      <button type="button" class="btn-icon" data-action="close-account" aria-label="Close">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="creator-card">
+        <div id="account-avatar-large" class="creator-avatar">R</div>
+        <div>
+          <h3 id="account-name-large">Account</h3>
+          <p id="account-email-large">—</p>
+        </div>
+      </div>
+      <div class="usage-card">
+        <div><span>Daily AI messages</span><strong id="account-daily-usage">—</strong></div>
+        <div><span>Monthly AI messages</span><strong id="account-monthly-usage">—</strong></div>
+      </div>
+      <p class="form-desc">Your AI requests use your own Astra API credits. The Rockstar AI owner does not pay for your requests.</p>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-secondary" data-action="close-account">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Client JavaScript Modules -->
+  <script src="/js/login-experience.js?v=2.7.0"></script>
+  <script src="/js/auth.js?v=2.6.0"></script>
+  <script src="/js/markdown.js?v=2.6.0"></script>
+  <script src="/js/storage.js?v=2.6.0"></script>
+  <script src="/js/astra-client.js?v=2.6.0"></script>
+  <script src="/js/local-engine.js?v=2.6.0"></script>
+  <script src="/js/ui.js?v=2.6.0"></script>
+  <script src="/js/composer.js?v=2.6.0"></script>
+  <script src="/js/settings.js?v=2.6.0"></script>
+  <script src="/js/app.js?v=2.6.0"></script>
+</body>
+</html>

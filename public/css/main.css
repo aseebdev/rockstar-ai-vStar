@@ -1,0 +1,572 @@
+/**
+ * Astra Local AI - Base Layout, Reset & Glass Atmosphere
+ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Background Ambient Lighting Aura */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20vh;
+  left: 20vw;
+  width: 60vw;
+  height: 50vh;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(80px);
+  transition: background var(--duration-normal) var(--ease-smooth);
+}
+
+/* App Root Grid / Flex Container */
+#app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--bg-app-gradient);
+}
+
+/* Main Content Area */
+#main-chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accessible Focus States */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--border-focus);
+}
+
+/* Custom Glassmorphism Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+/* Utility Classes */
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Mobile Header (Hidden on Desktop) */
+.mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-glass);
+  backdrop-filter: var(--backdrop-blur);
+  z-index: 10;
+}
+
+.mobile-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Responsive Rules */
+@media (max-width: 768px) {
+  .mobile-header {
+    display: flex;
+  }
+}
+
+
+/* =========================================================
+   Rockstar AI public/auth/account layer
+   ========================================================= */
+
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(124, 58, 237, .22), transparent 32%),
+    radial-gradient(circle at 80% 80%, rgba(14, 165, 233, .18), transparent 32%),
+    #070910;
+}
+
+.auth-card {
+  width: min(440px, 100%);
+  padding: 30px;
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  background: rgba(15, 18, 30, .78);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 24px 80px rgba(0,0,0,.38);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.rockstar-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: white;
+  font-size: 22px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  box-shadow: 0 10px 30px rgba(99,102,241,.28);
+}
+
+.auth-brand-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
+.auth-brand-sub {
+  margin-top: 3px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.auth-card h1 {
+  font-size: 28px;
+  margin-bottom: 7px;
+}
+
+.auth-subtitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 22px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 2px;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+}
+
+.auth-switch-row {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 20px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.auth-switch {
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-error {
+  min-height: 18px;
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.auth-byok-note {
+  margin-top: 22px;
+  padding: 11px 12px;
+  border: 1px solid rgba(99,102,241,.2);
+  border-radius: 12px;
+  color: var(--text-tertiary);
+  background: rgba(99,102,241,.06);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.account-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border-glass);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.account-button {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-avatar,
+.creator-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  font-weight: 800;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+}
+
+.account-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+}
+
+.account-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.account-copy strong {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-copy small {
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.api-key-row {
+  display: flex;
+  gap: 8px;
+}
+
+.api-key-row .form-input {
+  min-width: 0;
+  flex: 1;
+}
+
+.api-key-toggle {
+  min-width: 66px;
+}
+
+.creator-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid var(--border-glass);
+  margin-bottom: 18px;
+}
+
+.creator-avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 17px;
+}
+
+.creator-card h3 {
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.creator-card p {
+  margin-top: 4px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.creator-card a,
+.creator-links a {
+  display: inline-block;
+  margin-top: 6px;
+  color: #8b9cff;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.about-copy {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.65;
+  margin-bottom: 18px;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.about-grid > div,
+.usage-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
+}
+
+.about-grid strong {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.about-grid span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.creator-links {
+  margin-top: 14px;
+}
+
+.secret-note {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 7px;
+  letter-spacing: .04em;
+  color: rgba(255,255,255,.12);
+  user-select: none;
+}
+
+.usage-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.usage-card span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.usage-card strong {
+  font-size: 14px;
+}
+
+@media (max-width: 520px) {
+  .auth-card {
+    padding: 24px;
+  }
+
+  .about-grid,
+  .usage-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   Login music + post-login welcome experience
+   ========================================================= */
+#welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(124, 58, 237, .18), transparent 34%),
+    radial-gradient(circle at 18% 82%, rgba(14, 165, 233, .10), transparent 30%),
+    rgba(4, 6, 12, .96);
+  backdrop-filter: blur(18px);
+  opacity: 1;
+  transition: opacity .65s ease, visibility .65s ease;
+}
+#welcome-overlay.hidden {
+  display: grid;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.welcome-glow {
+  position: absolute;
+  width: min(58vw, 620px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(124,58,237,.16), rgba(6,182,212,.06) 42%, transparent 70%);
+  filter: blur(10px);
+  animation: welcome-breathe 2.8s ease-in-out infinite;
+}
+.welcome-content {
+  position: relative;
+  width: min(760px, calc(100vw - 40px));
+  padding: 42px 28px;
+  text-align: center;
+  animation: welcome-rise .8s cubic-bezier(.2,.8,.2,1) both;
+}
+.welcome-mark {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 20px;
+  color: #fff;
+  font-size: 30px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  box-shadow: 0 16px 55px rgba(99,102,241,.34);
+  animation: welcome-mark-pulse 2s ease-in-out infinite;
+}
+.welcome-eyebrow {
+  margin: 0 0 13px;
+  color: rgba(255,255,255,.58);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .24em;
+}
+.welcome-title {
+  min-height: 2.5em;
+  margin: 0 auto;
+  color: #fff;
+  font-size: clamp(28px, 4vw, 52px);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+  text-shadow: 0 8px 40px rgba(0,0,0,.35);
+}
+.welcome-cursor {
+  width: 2px;
+  height: 1.15em;
+  margin: 11px auto 0;
+  background: #a78bfa;
+  animation: welcome-cursor .75s steps(1) infinite;
+}
+.welcome-motivation {
+  margin: 22px auto 0;
+  color: rgba(255,255,255,.88);
+  font-size: clamp(15px, 2vw, 20px);
+  font-weight: 650;
+  letter-spacing: -.01em;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .5s ease, transform .5s ease;
+}
+.welcome-motivation.visible { opacity: 1; transform: translateY(0); }
+.welcome-subtitle {
+  margin: 18px 0 0;
+  color: rgba(255,255,255,.52);
+  font-size: 14px;
+  letter-spacing: .01em;
+  opacity: 0;
+  animation: welcome-subtitle-in .7s ease 1.2s forwards;
+}
+@keyframes welcome-breathe {
+  0%,100% { transform: scale(.92); opacity: .72; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+@keyframes welcome-rise {
+  from { opacity: 0; transform: translateY(20px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes welcome-mark-pulse {
+  0%,100% { transform: translateY(0); box-shadow: 0 16px 55px rgba(99,102,241,.30); }
+  50% { transform: translateY(-4px); box-shadow: 0 22px 70px rgba(99,102,241,.42); }
+}
+@keyframes welcome-cursor {
+  0%,49% { opacity: 1; }
+  50%,100% { opacity: 0; }
+}
+@keyframes welcome-subtitle-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .welcome-glow, .welcome-mark, .welcome-content, .welcome-cursor, .welcome-subtitle {
+    animation: none;
+  }
+  .welcome-motivation {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+  .welcome-subtitle { opacity: 1; }
+}
