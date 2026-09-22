@@ -1,8 +1,13 @@
 /**
- * Rockstar AI — Vercel / Node entrypoint
+ * Rockstar AI — Vercel Express entrypoint.
  *
- * Vercel's current Express/Node deployment detection looks for the server
- * entrypoint at the project root. The application itself remains in
- * server/server.js so local `npm start` keeps working exactly as before.
+ * Vercel detects Express from this root entrypoint. The actual application
+ * remains in server/server.js so the local project structure stays intact.
  */
-module.exports = require('./server/server');
+const express = require('express');
+const app = require('./server/server');
+
+// Keep Express explicitly imported in the Vercel entrypoint for framework detection.
+void express;
+
+module.exports = app;

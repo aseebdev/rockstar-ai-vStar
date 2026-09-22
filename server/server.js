@@ -104,6 +104,10 @@ async function start() {
   });
 }
 
-start();
+// Vercel runs the exported Express app as the serverless/Fluid Compute entrypoint.
+// Only start a listening TCP server during local/self-hosted execution.
+if (!process.env.VERCEL) {
+  start();
+}
 
 module.exports = app;
