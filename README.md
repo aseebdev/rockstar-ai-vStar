@@ -1,3 +1,7 @@
+## Vercel deployment
+
+This project includes a root `server.js` entrypoint for Vercel's Express/Node deployment detection. Configure the environment variables from `.env.example` in Vercel; never upload `.env`.
+
 # Rockstar AI
 
 A polished ChatGPT-style AI interface built with Node.js + Express, PostgreSQL and Astra API.

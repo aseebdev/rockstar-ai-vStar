@@ -41,9 +41,10 @@ app.use(express.static(publicDir, {
   etag: true
 }));
 
-// Login music is intentionally kept at the project root (rraudio.mp3) so it is easy to replace.
+// Login music is a public static asset. Keeping it under /public makes the
+// asset available both locally and on Vercel.
 app.get('/rraudio.mp3', (req, res, next) => {
-  res.sendFile(path.join(__dirname, '..', 'rraudio.mp3'), (err) => {
+  res.sendFile(path.join(publicDir, 'rraudio.mp3'), (err) => {
     if (err) next(err);
   });
 });
