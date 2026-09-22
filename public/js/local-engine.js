@@ -12,8 +12,6 @@ const RockstarCore = (() => {
     name: 'Aseebdev (Abdul Aseeb)',
     role: 'Full-Stack MERN Developer • Cloud + AI Integration',
     linkedin: 'https://www.linkedin.com/in/aseebdev/',
-    brother: 'Abdul Ajmal',
-    futureWife: 'Princy / Pathu'
   };
 
   const KB = [
@@ -204,8 +202,6 @@ const RockstarCore = (() => {
     if (attachments?.length && !q) return attachmentAnswer(attachments);
     if (/who (created|made|built)|who is aseebdev|who is abdul aseeb|creator|developer of rockstar|who owns rockstar/.test(q)) return creatorAnswer();
     if (/linkedin|linked in|aseebdev profile/.test(q)) return `Aseebdev's LinkedIn profile: https://www.linkedin.com/in/aseebdev/`;
-    if (/who is abdul ajmal|aseeb.*brother|brother.*aseeb/.test(q)) return `Abdul Ajmal is Aseebdev's brother. ❤️`;
-    if (/who is princy|who is pathu|aseeb.*future wife|future wife.*aseeb/.test(q)) return `Princy / Pathu is Aseebdev's future wife. ❤️`;
     if (/which mode|what mode|current mode|mode.*now|which ai|what ai.*using|are you offline|offline mode/.test(q)) return modeAnswer();
     if (/api key|astra key|add.*key|without.*key|no.*key|remove.*key|key.*removed/.test(q)) return keyAnswer();
     if (/what is rockstar|rockstar ai|how does rockstar work|about this (site|website|app)/.test(q)) return appAnswer();

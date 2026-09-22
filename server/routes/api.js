@@ -13,7 +13,7 @@ try { mammoth = require('mammoth'); } catch {}
 try { XLSX = require('xlsx'); } catch {}
 try { AdmZip = require('adm-zip'); } catch {}
 
-const ROCKSTAR_CREATOR_CONTEXT = `You are Rockstar AI, the AI interface created by Aseebdev (Abdul Aseeb), a Full-Stack MERN Developer focused on Cloud + AI Integration. If a user asks who created Rockstar AI, who Aseebdev is, or asks about the creator, answer accurately: Rockstar AI was created by Aseebdev (Abdul Aseeb). A small personal note from the creator is that he loves his brother Abdul Ajmal and his future wife Princy / Pathu. His LinkedIn profile is https://www.linkedin.com/in/aseebdev/. Do not invent additional personal facts.`;
+const ROCKSTAR_CREATOR_CONTEXT = `You are Rockstar AI, the AI interface created by Aseebdev (Abdul Aseeb), a Full-Stack MERN Developer focused on Cloud + AI Integration. If a user asks who created Rockstar AI, who Aseebdev is, or asks about the creator, answer accurately: Rockstar AI was created by Aseebdev (Abdul Aseeb). LinkedIn: https://www.linkedin.com/in/aseebdev/. Do not invent additional personal facts.`;
 const ROCKSTAR_RUNTIME_CONTEXT = `RUNTIME MODE: ASTRA AI MODEL MODE. This request is being answered through the user's connected Astra AI model, not Rockstar Core and not the offline fallback. If the user asks what mode is active, state clearly that Astra AI model mode is active and name the selected model when known.`;
 
 async function userAstraKey(req) {
@@ -37,15 +37,20 @@ router.get('/capabilities', requireAuth, async (req, res, next) => {
       tools: {
         fileAnalysis: true,
         documentExport: true,
-        webSearch: false,
-        imageGeneration: false,
-        codeExecution: false,
-        voiceBrowser: true
+        webSearch: Boolean(process.env.TAVILY_API_KEY),
+        imageGeneration: Boolean(process.env.OPENAI_API_KEY),
+        imageEditing: Boolean(process.env.OPENAI_API_KEY),
+        codeExecution: process.env.ENABLE_CODE_EXECUTION === 'true',
+        voiceBrowser: true,
+        voiceTts: Boolean(process.env.OPENAI_API_KEY),
+        webSearch: Boolean(process.env.TAVILY_API_KEY),
+        docx: true, xlsx: true, pptx: true,
+        secureSharing: true, backgroundJobs: true, auditLogs: true
       },
       notes: {
-        webSearch: 'Not connected to a web-search provider.',
-        imageGeneration: 'Not connected to an image-generation provider.',
-        codeExecution: 'No server-side sandbox is enabled; arbitrary code is never executed by Rockstar AI.'
+        webSearch: process.env.TAVILY_API_KEY ? 'Tavily web search connected.' : 'Add TAVILY_API_KEY to connect web search.',
+        imageGeneration: process.env.OPENAI_API_KEY ? 'OpenAI image generation/editing connected.' : 'Add OPENAI_API_KEY to connect image generation/editing.',
+        codeExecution: process.env.ENABLE_CODE_EXECUTION === 'true' ? 'Remote sandbox execution enabled through the configured Piston endpoint.' : 'Code execution is disabled until a sandbox endpoint is configured.'
       }
     });
   } catch (err) {

@@ -1,125 +1,41 @@
-/**
- * Rockstar AI Tools layer.
- * Only exposes actions that the browser/application can actually perform.
- */
 const RockstarTools = (() => {
-  let dialog;
-  let modeTitle;
-  let modeDescription;
-  let note;
-
+  let dialog, modeTitle, modeDescription, note;
   function init() {
-    dialog = document.getElementById('tools-dialog');
-    modeTitle = document.getElementById('tool-mode-title');
-    modeDescription = document.getElementById('tool-mode-description');
-    note = document.getElementById('tool-capability-note');
-    document.getElementById('btn-tools')?.addEventListener('click', open);
-    document.getElementById('close-tools')?.addEventListener('click', close);
-    document.querySelectorAll('[data-tool-action]').forEach(btn => btn.addEventListener('click', () => run(btn.dataset.toolAction)));
-    document.getElementById('btn-voice')?.addEventListener('click', toggleVoice);
-    updateMode();
+    dialog=document.getElementById('tools-dialog'); modeTitle=document.getElementById('tool-mode-title'); modeDescription=document.getElementById('tool-mode-description'); note=document.getElementById('tool-capability-note');
+    document.getElementById('btn-tools')?.addEventListener('click',open); document.getElementById('close-tools')?.addEventListener('click',close);
+    document.querySelectorAll('[data-tool-action]').forEach(btn=>btn.addEventListener('click',()=>run(btn.dataset.toolAction)));
+    document.getElementById('btn-voice')?.addEventListener('click',toggleVoice); updateMode();
   }
-
-  function currentMode() {
-    const settings = Storage.getSettings();
-    const hasKey = Auth.hasAstraKey();
-    if (settings.aiMode === 'offline') return { id: 'offline', title: 'Rockstar Core • Offline', description: 'Cloud calls are disabled by your selected mode.' };
-    if (settings.aiMode === 'cloud' && hasKey) return { id: 'cloud', title: `Astra AI • ${settings.selectedModel || 'selected model'}`, description: 'Configured cloud route using your connected Astra API key.' };
-    if (settings.aiMode === 'automatic' && hasKey) return { id: 'cloud', title: `Astra AI • ${settings.selectedModel || 'selected model'}`, description: 'Automatic mode selected your configured Astra model.' };
-    return { id: 'offline', title: 'Rockstar Core • Offline', description: 'No Astra key is connected, so Automatic mode stays offline.' };
-  }
-
-  function updateMode() {
-    const mode = currentMode();
-    if (modeTitle) modeTitle.textContent = mode.title;
-    if (modeDescription) modeDescription.textContent = mode.description;
-    const dot = document.getElementById('tool-mode-dot');
-    dot?.classList.toggle('cloud', mode.id === 'cloud');
-  }
-
-  async function open() {
-    updateMode();
-    if (dialog && !dialog.open) dialog.showModal();
-    await loadCapabilities();
-  }
-
-  function close() { dialog?.close(); }
-
-  async function loadCapabilities() {
-    try {
-      const res = await fetch('/api/capabilities', { credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
-      note.textContent = `Ready: file analysis, document export and browser voice. Not connected: web search, image generation and server-side code sandbox.`;
-    } catch (err) {
-      note.textContent = `Capability check failed: ${err.message}. No unavailable tool will be simulated.`;
-    }
-  }
-
-  async function getCurrentData() {
-    const workspace = window.RockstarAI?.getActiveConversationData?.();
-    if (!workspace) throw new Error('Open a conversation before exporting it.');
-    return workspace;
-  }
-
-  function download(text, name, type) {
-    const blob = new Blob([text], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  function markdown(data) {
-    return data.messages.map(m => `## ${m.role === 'user' ? 'User' : 'Rockstar AI'}\n\n${m.content || ''}`).join('\n\n');
-  }
-
-  function html(data) {
-    const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(data.title)}</title><style>body{font:16px system-ui;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.6}article{margin:28px 0;padding:18px;border:1px solid #ddd;border-radius:12px}h1{margin-bottom:30px}pre{white-space:pre-wrap}</style></head><body><h1>${esc(data.title)}</h1>${data.messages.map(m => `<article><strong>${m.role === 'user' ? 'User' : 'Rockstar AI'}</strong><pre>${esc(m.content)}</pre></article>`).join('')}</body></html>`;
-  }
-
-  async function run(action) {
-    try {
-      if (action === 'capabilities') { await loadCapabilities(); return; }
-      const data = await getCurrentData();
-      const safe = data.title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 60) || 'rockstar-chat';
-      if (action === 'export-txt') download(data.messages.map(m => `[${m.role.toUpperCase()}]\n${m.content || ''}`).join('\n\n'), `${safe}.txt`, 'text/plain');
-      if (action === 'export-md') download(`# ${data.title}\n\n${markdown(data)}`, `${safe}.md`, 'text/markdown');
-      if (action === 'export-html') download(html(data), `${safe}.html`, 'text/html');
-      if (action === 'export-json') download(JSON.stringify(data, null, 2), `${safe}.json`, 'application/json');
-      if (action === 'print-pdf') {
-        const w = window.open('', '_blank', 'noopener,noreferrer');
-        if (!w) throw new Error('Your browser blocked the print window. Allow pop-ups for Rockstar AI.');
-        w.document.write(html(data)); w.document.close(); w.focus(); setTimeout(() => w.print(), 250);
-      }
-      UI.showToast('Tool completed successfully.', 'success');
-    } catch (err) {
-      UI.showToast(err.message || 'Tool could not complete.', 'error', 5000);
-    }
-  }
-
-  let recognition = null;
-  function toggleVoice() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { UI.showToast('Voice input is not supported by this browser.', 'warning'); return; }
-    if (recognition) { recognition.stop(); return; }
-    recognition = new SpeechRecognition();
-    recognition.lang = Storage.getSettings().voiceLanguage || 'en-US';
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    const button = document.getElementById('btn-voice');
-    button?.classList.add('recording');
-    recognition.onresult = e => {
-      let text = ''; for (const r of e.results) text += r[0].transcript;
-      const ta = document.getElementById('composer-textarea');
-      if (ta) { ta.value = text; ta.dispatchEvent(new Event('input', { bubbles: true })); }
-    };
-    recognition.onerror = e => UI.showToast(`Voice input: ${e.error}`, 'warning');
-    recognition.onend = () => { recognition = null; button?.classList.remove('recording'); };
-    recognition.start();
-  }
-
-  return { init, updateMode };
+  function currentMode(){const s=Storage.getSettings(), hasKey=Auth.hasAstraKey(); if(s.aiMode==='offline')return{id:'offline',title:'Rockstar Core • Offline',description:'Cloud calls are disabled by your selected mode.'}; if((s.aiMode==='cloud'||s.aiMode==='automatic')&&hasKey)return{id:'cloud',title:`Astra AI • ${s.selectedModel||'selected model'}`,description:'Connected cloud route using your Astra API key.'}; return{id:'offline',title:'Rockstar Core • Offline',description:'No Astra key is connected, so Automatic mode stays offline.'};}
+  function updateMode(){const m=currentMode();if(modeTitle)modeTitle.textContent=m.title;if(modeDescription)modeDescription.textContent=m.description;document.getElementById('tool-mode-dot')?.classList.toggle('cloud',m.id==='cloud');}
+  async function open(){updateMode();if(dialog&&!dialog.open)dialog.showModal();await loadCapabilities();} function close(){dialog?.close();}
+  async function api(path, options={}){const r=await fetch(path,{credentials:'include',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d?.error?.message||`Request failed (${r.status})`);return d;}
+  async function loadCapabilities(){try{const d=await api('/api/tools/status');const t=d.tools;note.textContent=`Connected: ${Object.entries(t).filter(([,v])=>v).map(([k])=>k).join(', ')}. Disabled/unconfigured tools are never simulated.`;}catch(e){note.textContent=`Capability check failed: ${e.message}`;}}
+  async function getCurrentData(){const w=window.RockstarAI?.getActiveConversationData?.();if(!w)throw new Error('Open a conversation first.');return w;}
+  function downloadDataUrl(b64,filename,mime){const a=document.createElement('a');a.href=`data:${mime};base64,${b64}`;a.download=filename;a.click();}
+  function downloadText(text,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+  async function run(action){try{
+    if(action==='capabilities'){await loadCapabilities();UI.showToast(note.textContent,'info',5000);return;}
+    if(action==='web-search'){const q=prompt('Search the web for:');if(!q)return;const d=await api('/api/tools/web-search',{method:'POST',body:JSON.stringify({query:q})});const html=`<html><body style="font-family:system-ui;max-width:900px;margin:40px auto;padding:20px"><h1>Web search</h1><p>${escapeHtml(d.answer||'')}</p>${d.results.map(r=>`<article><h3>${r.rank}. <a href="${escapeAttr(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title||r.url)}</a></h3><p>${escapeHtml(r.content||'')}</p><small>${escapeHtml(r.publishedDate||'')}</small></article>`).join('')}</body></html>`;const w=window.open('','_blank','noopener,noreferrer');if(!w)throw new Error('Allow pop-ups to view search results.');w.document.write(html);w.document.close();UI.showToast('Web search completed.','success');return;}
+    if(action==='image-generate'){const p=prompt('Describe the image to generate:');if(!p)return;const d=await api('/api/tools/image/generate',{method:'POST',body:JSON.stringify({prompt:p})});(d.images||[]).forEach((im,i)=>downloadDataUrl(im.b64,`rockstar-image-${Date.now()}-${i+1}.png`,'image/png'));UI.showToast(`${d.images.length} image(s) generated.`,'success');return;}
+    if(action==='image-edit'){const atts=window.RockstarAI?.getActiveAttachments?.()||[];const img=atts.find(a=>a.kind==='image'&&a.dataUrl);if(!img)throw new Error('Attach an image to the current message first.');const p=prompt('Describe the edit:');if(!p)return;const d=await api('/api/tools/image/edit',{method:'POST',body:JSON.stringify({image:img.dataUrl,prompt:p})});(d.images||[]).forEach((im,i)=>downloadDataUrl(im.b64,`rockstar-edited-${Date.now()}-${i+1}.png`,'image/png'));UI.showToast('Image edit completed.','success');return;}
+    if(action==='code-execute'){const language=prompt('Language (python/javascript/etc.):','python');if(!language)return;const code=prompt('Paste code to run:');if(!code)return;const d=await api('/api/tools/code/execute',{method:'POST',body:JSON.stringify({language,code})});const out=[d.compile?.output,d.run?.stdout,d.run?.stderr].filter(Boolean).join('\n');alert(out||'Execution completed with no output.');UI.showToast('Code execution completed.','success');return;}
+    if(action==='create-docx'||action==='create-xlsx'||action==='create-pptx'){const data=await getCurrentData();const type=action.slice(7);const text=data.messages.map(m=>`${m.role.toUpperCase()}\n${m.content||''}`).join('\n\n');const rows=data.messages.map(m=>[new Date(m.createdAt||Date.now()).toISOString(),m.role,m.content||'']);const d=await api('/api/tools/files/create',{method:'POST',body:JSON.stringify({type,title:data.title,text,rows,conversationId:data.id})});const a=document.createElement('a');a.href=d.file.downloadUrl;a.download=d.file.filename;a.click();UI.showToast(`${type.toUpperCase()} created.`,'success');return;}
+    if(action==='speak-last'){const data=await getCurrentData();const last=[...data.messages].reverse().find(m=>m.role==='assistant');if(!last)throw new Error('There is no assistant answer to speak.');const r=await fetch('/api/tools/voice/tts',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:last.content})});if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||'TTS failed.');}const blob=await r.blob();const audio=new Audio(URL.createObjectURL(blob));audio.onended=()=>URL.revokeObjectURL(audio.src);await audio.play();UI.showToast('Voice playback started.','success');return;}
+    if(action==='share-chat'){const data=await getCurrentData();if(!data.id)throw new Error('This chat has not been saved yet.');const d=await api('/api/tools/share',{method:'POST',body:JSON.stringify({conversationId:data.id,expiresInDays:7})});await navigator.clipboard?.writeText(d.url);prompt('Secure share link (copied if your browser allowed it):',d.url);return;}
+    if(action==='audit-log'){const d=await api('/api/tools/audit');const text=d.logs.map(x=>`${new Date(x.createdAt).toLocaleString()} — ${x.action} — ${x.resourceType||''} ${x.resourceId||''}`).join('\n');downloadText(text||'No audit events yet.','rockstar-audit.txt','text/plain');return;}
+    if(action==='job-status'){const id=prompt('Enter a job ID to check:');if(!id)return;const d=await api(`/api/tools/jobs/${encodeURIComponent(id)}`);alert(JSON.stringify(d.job,null,2));return;}
+    const data=await getCurrentData();const safe=data.title.replace(/[^a-z0-9-_]+/gi,'-').slice(0,60)||'rockstar-chat';
+    if(action==='export-txt')downloadText(data.messages.map(m=>`[${m.role.toUpperCase()}]\n${m.content||''}`).join('\n\n'),`${safe}.txt`,'text/plain');
+    if(action==='export-md')downloadText(`# ${data.title}\n\n${data.messages.map(m=>`## ${m.role==='user'?'User':'Rockstar AI'}\n\n${m.content||''}`).join('\n\n')}`,`${safe}.md`,'text/markdown');
+    if(action==='export-html')downloadText(`<html><body><h1>${escapeHtml(data.title)}</h1>${data.messages.map(m=>`<article><b>${m.role}</b><pre>${escapeHtml(m.content)}</pre></article>`).join('')}</body></html>`,`${safe}.html`,'text/html');
+    if(action==='export-json')downloadText(JSON.stringify(data,null,2),`${safe}.json`,'application/json');
+    if(action==='print-pdf'){const w=window.open('','_blank','noopener,noreferrer');if(!w)throw new Error('Allow pop-ups.');w.document.write(`<html><body><h1>${escapeHtml(data.title)}</h1>${data.messages.map(m=>`<article><b>${m.role}</b><pre>${escapeHtml(m.content)}</pre></article>`).join('')}</body></html>`);w.document.close();setTimeout(()=>w.print(),250);}
+    UI.showToast('Tool completed successfully.','success');
+  }catch(e){UI.showToast(e.message||'Tool could not complete.','error',6000);}}
+  function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function escapeAttr(s){return escapeHtml(s).replace(/javascript:/gi,'');}
+  let recognition=null;function toggleVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){UI.showToast('Voice input is not supported by this browser.','warning');return;}if(recognition){recognition.stop();return;}recognition=new SR();recognition.lang=Storage.getSettings().voiceLanguage||'en-US';recognition.interimResults=true;recognition.continuous=false;const b=document.getElementById('btn-voice');b?.classList.add('recording');recognition.onresult=e=>{let t='';for(const r of e.results)t+=r[0].transcript;const ta=document.getElementById('composer-textarea');if(ta){ta.value=t;ta.dispatchEvent(new Event('input',{bubbles:true}));}};recognition.onerror=e=>UI.showToast(`Voice input: ${e.error}`,'warning');recognition.onend=()=>{recognition=null;b?.classList.remove('recording')};recognition.start();}
+  return {init,updateMode};
 })();
-window.RockstarTools = RockstarTools;
+window.RockstarTools=RockstarTools;

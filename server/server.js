@@ -6,12 +6,27 @@ const cors = require('cors');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const dataRoutes = require('./routes/data');
+const toolsRoutes = require('./routes/tools');
 const { securityHeaders, sameOriginGuard, rateLimit } = require('./middleware/security');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initDb } = require('./db');
 const logger = require('./utils/logger');
 
 const app = express();
+
+let dbInitPromise = null;
+if (process.env.VERCEL) {
+  app.use(async (req, res, next) => {
+    try {
+      if (!dbInitPromise) dbInitPromise = initDb();
+      await dbInitPromise;
+      next();
+    } catch (err) {
+      logger.error('Vercel database initialization failed:', err.message);
+      next(err);
+    }
+  });
+}
 
 if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 const PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -51,7 +66,13 @@ app.get('/rraudio.mp3', (req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
+app.use('/api/tools', toolsRoutes);
 app.use('/api', apiRoutes);
+
+app.get('/share/:token', (req, res) => {
+  const token = String(req.params.token).replace(/[^A-Za-z0-9_-]/g, '');
+  res.type('html').send(`<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Rockstar AI • Shared conversation</title><style>body{font-family:system-ui,sans-serif;background:#080b12;color:#eef2ff;margin:0;padding:32px}main{max-width:900px;margin:auto}.card{background:#111827;border:1px solid #263148;border-radius:18px;padding:24px;margin:18px 0}pre{white-space:pre-wrap;word-break:break-word}h1{font-size:28px}</style></head><body><main id=\"app\"><div class=\"card\">Loading secure conversation…</div></main><script>const token=${JSON.stringify(token)};fetch('/api/tools/share/'+token).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d?.error?.message||'Share unavailable');document.title='Rockstar AI • '+d.conversation.title;document.getElementById('app').innerHTML='<h1>'+esc(d.conversation.title)+'</h1>'+d.conversation.messages.map(m=>'<section class=\"card\"><strong>'+esc(m.role)+'</strong><pre>'+esc(m.content)+'</pre></section>').join('')}).catch(e=>document.getElementById('app').innerHTML='<div class=\"card\"><h1>Share unavailable</h1><p>'+esc(e.message)+'</p></div>');function esc(s){return String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}</script></body></html>`);
+});
 
 app.get('*', (req, res, next) => {
   if (req.accepts('html')) {

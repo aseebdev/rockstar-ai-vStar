@@ -526,8 +526,21 @@
     const settings = Storage.getSettings();
     let accumulatedContent = '';
 
+    // Automatic live-web orchestration for explicitly current/search-oriented requests.
+    let enrichedMessages = apiMessages;
+    if (/\b(search the web|web search|latest|today|current|recent|breaking news|news about)\b/i.test(userText || '')) {
+      try {
+        const sr = await fetch('/api/tools/web-search', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: userText, maxResults: 6 }) });
+        const sd = await sr.json();
+        if (sr.ok && Array.isArray(sd.results)) {
+          const sourceText = sd.results.map(r => `[${r.rank}] ${r.title}\nURL: ${r.url}\nPublished: ${r.publishedDate || 'unknown'}\n${r.content || ''}`).join('\n\n');
+          enrichedMessages = [...apiMessages, { role: 'system', content: `LIVE WEB SEARCH RESULTS. Use these sources for current claims, cite them by URL/title, and clearly distinguish retrieved facts from your own knowledge. Do not invent sources.\n\n${sourceText}` }];
+        }
+      } catch (_) { enrichedMessages = [...apiMessages, { role: 'system', content: 'The live web-search tool is unavailable for this request. Do not claim that you searched the web or verified current information.' }]; }
+    }
+
     currentStream = AstraClient.streamChat({
-      messages: apiMessages,
+      messages: enrichedMessages,
       model: settings.selectedModel,
       systemPrompt: [
         `RUNTIME MODE: VERIFIED ASTRA CLOUD MODE. The application verified the user's Astra key and selected model before this request. If asked which mode is active, state the selected Astra model. Never call this offline or Rockstar Core.`,
@@ -675,11 +688,12 @@
   }
 
   window.RockstarAI = window.RockstarAI || {};
+  window.RockstarAI.getActiveAttachments = () => Composer.getAttachments?.() || [];
   window.RockstarAI.getActiveConversationData = async () => {
     if (!activeConversationId) return null;
     const conv = await Storage.getConversation(activeConversationId);
     const messages = await Storage.getMessages(activeConversationId);
-    return { title: conv?.title || 'Rockstar Chat', messages };
+    return { id: activeConversationId, title: conv?.title || 'Rockstar Chat', messages };
   };
 
   // Boot on DOM Ready

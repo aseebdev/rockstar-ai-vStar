@@ -1,7 +1,7 @@
 {
   "name": "rockstar-ai",
-  "version": "4.0.0",
-  "description": "Rockstar AI multimodal workspace foundation with verified modes, BYOK Astra, file analysis, browser tools, and honest capability reporting",
+  "version": "4.1.0",
+  "description": "Rockstar AI production multimodal tool layer with web search, image generation/editing, sandbox execution, document creation, TTS, secure sharing, jobs, and audit controls",
   "main": "api/index.js",
   "type": "commonjs",
   "scripts": {
