@@ -209,6 +209,7 @@
 
   function updateKeyRequiredUI() {
     const hasKey = Auth.hasAstraKey();
+    const effectiveMode = getEffectiveMode();
     const banner = document.getElementById('key-required-banner');
     const bannerTitle = banner?.querySelector('[data-key-banner-title]');
     const bannerText = banner?.querySelector('[data-key-banner-text]');
