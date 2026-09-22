@@ -8,14 +8,47 @@
   <title>Rockstar AI</title>
 
   <!-- Design Tokens & CSS Modules -->
-  <link rel="stylesheet" href="/css/tokens.css?v=2.7.0">
-  <link rel="stylesheet" href="/css/main.css?v=2.7.0">
-  <link rel="stylesheet" href="/css/components.css?v=2.7.0">
-  <link rel="stylesheet" href="/css/markdown.css?v=2.7.0">
+  <link rel="stylesheet" href="/css/tokens.css?v=3.0.0">
+  <link rel="stylesheet" href="/css/main.css?v=3.0.0">
+  <link rel="stylesheet" href="/css/components.css?v=3.0.0">
+  <link rel="stylesheet" href="/css/markdown.css?v=3.0.0">
 </head>
 <body>
 
-  <!-- Login-screen music: place rraudio.mp3 in the project root. The server exposes it at /rraudio.mp3. -->
+  <!-- Cinematic first-load transition -->
+  <div id="boot-overlay" class="boot-overlay" aria-hidden="true">
+    <div class="boot-noise" aria-hidden="true"></div>
+    <div class="boot-orbit boot-orbit-a" aria-hidden="true"></div>
+    <div class="boot-orbit boot-orbit-b" aria-hidden="true"></div>
+    <div class="boot-starfield" aria-hidden="true"></div>
+    <div class="boot-core" aria-hidden="true">
+      <span class="boot-core-star">✦</span>
+    </div>
+    <div class="boot-copy">
+      <span class="boot-kicker">ASEEBDEV / SYSTEM INITIALIZING</span>
+      <strong>ROCKSTAR AI</strong>
+      <span class="boot-line"><i></i><em>BUILD • CONNECT • CREATE</em></span>
+    </div>
+  </div>
+
+  <!-- Cinematic logout transition -->
+  <div id="exit-overlay" class="exit-overlay" aria-hidden="true">
+    <div class="exit-ring exit-ring-a"></div>
+    <div class="exit-ring exit-ring-b"></div>
+    <div class="exit-star">✦</div>
+    <div class="exit-copy">
+      <span>SESSION CLOSING</span>
+      <strong>See you next time.</strong>
+    </div>
+  </div>
+
+  <!-- Global login/welcome music control -->
+  <button id="music-toggle" class="music-toggle" type="button" aria-label="Pause login music" title="Pause login music">
+    <span class="music-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="music-toggle-label">Music</span>
+  </button>
+
+  <!-- Login-screen music -->
   <audio id="login-music" preload="auto" loop aria-hidden="true">
     <source src="/rraudio.mp3" type="audio/mpeg">
   </audio>
@@ -578,15 +611,15 @@
   </dialog>
 
   <!-- Client JavaScript Modules -->
-  <script src="/js/login-experience.js?v=2.7.0"></script>
-  <script src="/js/auth.js?v=2.6.0"></script>
-  <script src="/js/markdown.js?v=2.6.0"></script>
-  <script src="/js/storage.js?v=2.6.0"></script>
-  <script src="/js/astra-client.js?v=2.6.0"></script>
-  <script src="/js/local-engine.js?v=2.6.0"></script>
-  <script src="/js/ui.js?v=2.6.0"></script>
-  <script src="/js/composer.js?v=2.6.0"></script>
-  <script src="/js/settings.js?v=2.6.0"></script>
-  <script src="/js/app.js?v=2.6.0"></script>
+  <script src="/js/login-experience.js?v=3.0.0"></script>
+  <script src="/js/auth.js?v=3.0.0"></script>
+  <script src="/js/markdown.js?v=3.0.0"></script>
+  <script src="/js/storage.js?v=3.0.0"></script>
+  <script src="/js/astra-client.js?v=3.0.0"></script>
+  <script src="/js/local-engine.js?v=3.0.0"></script>
+  <script src="/js/ui.js?v=3.0.0"></script>
+  <script src="/js/composer.js?v=3.0.0"></script>
+  <script src="/js/settings.js?v=3.0.0"></script>
+  <script src="/js/app.js?v=3.0.0"></script>
 </body>
 </html>

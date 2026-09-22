@@ -77,6 +77,73 @@ const RockstarCore = (() => {
     ['rockstar ai', 'Rockstar AI is a personal ChatGPT-style interface created by Aseebdev. It supports accounts, conversation history, themes and BYOK Astra models. Without an Astra key it uses Rockstar Core, the local offline assistant.'],
   ];
 
+
+  // Broader offline reference layer. This is intentionally deterministic and honest:
+  // it improves common-answer coverage but does not pretend to be a general cloud LLM.
+  KB.push(
+    ['python', 'Python is a general-purpose programming language known for readable syntax and a large ecosystem. It is widely used for automation, backend services, data work, AI/ML, scripting and education.'],
+    ['docker', 'Docker packages an application and its dependencies into containers. A Dockerfile describes the image build, while a container is a running instance of an image.'],
+    ['linux', 'Linux is a family of open-source Unix-like operating systems. Common command-line tools include pwd, ls, cd, cp, mv, rm, grep, find, cat, chmod and systemctl.'],
+    ['tcp ip', 'TCP/IP is the protocol suite used by the Internet. IP handles addressing and routing; TCP provides reliable ordered delivery between endpoints.'],
+    ['dns', 'DNS translates domain names such as example.com into network addresses such as IP addresses. A browser normally uses DNS before connecting to the destination server.'],
+    ['websocket', 'WebSocket provides a persistent, bidirectional connection between a client and server, making it useful for real-time features such as chat, collaboration and live dashboards.'],
+    ['graphql', 'GraphQL is an API query language and runtime where clients request the fields they need. Unlike a typical REST API, a GraphQL API often exposes a schema and a query endpoint.'],
+    ['redis', 'Redis is an in-memory data store commonly used for caching, sessions, rate limiting, queues and fast key-value operations.'],
+    ['cache', 'A cache stores reusable data closer to the code that needs it so repeated work can be avoided. Good cache design considers invalidation, expiration, consistency and memory limits.'],
+    ['queue', 'A job queue separates request handling from background work. A producer adds jobs, and workers process them asynchronously. Queues help with retries, bursts and long-running tasks.'],
+    ['cron', 'Cron is a scheduler for recurring jobs on Unix-like systems. A cron expression defines when a command should run.'],
+    ['ci cd', 'CI/CD automates software validation and delivery. Continuous integration runs tests/builds on changes; continuous delivery or deployment moves validated changes toward production.'],
+    ['testing', 'Software testing checks behavior against expected results. Unit tests target small pieces, integration tests verify components together, and end-to-end tests exercise real user flows.'],
+    ['unit test', 'A unit test checks a small isolated unit such as a function. Good unit tests are deterministic, focused and fast.'],
+    ['integration test', 'An integration test checks how multiple components work together, such as an API route interacting with a database.'],
+    ['e2e', 'End-to-end testing verifies a complete workflow from the user-facing entry point through the relevant backend and data layers.'],
+    ['serverless', 'Serverless computing runs application code on managed infrastructure without requiring the developer to manage long-lived servers. Functions are commonly invoked by HTTP requests or events.'],
+    ['vercel', 'Vercel is a cloud platform commonly used for deploying web applications and serverless functions. A project can connect to Git and automatically deploy commits.'],
+    ['environment variable', 'An environment variable is configuration supplied outside source code, often through process.env in Node.js. Secrets should be stored in the deployment platform rather than committed to Git.'],
+    ['cookie', 'A cookie is browser-managed data associated with a website. Authentication cookies should normally use Secure and HttpOnly, with an appropriate SameSite policy.'],
+    ['csrf', 'CSRF tricks a browser into sending an unwanted authenticated request. Common defenses include SameSite cookies, CSRF tokens and strict origin validation where applicable.'],
+    ['csp', 'Content Security Policy is a browser security mechanism that restricts which resources can execute or load. A strong CSP can reduce the impact of XSS.'],
+    ['https', 'HTTPS is HTTP protected by TLS. It encrypts traffic in transit and authenticates the server using certificates.'],
+    ['cdn', 'A CDN distributes cached content across geographically distributed edge locations so users can receive static assets from a nearby point of presence.'],
+    ['orm', 'An ORM maps application objects or models to database tables or records. It can improve developer productivity but does not remove the need to understand SQL and database behavior.'],
+    ['prisma', 'Prisma is a TypeScript/Node.js ORM and database toolkit with a schema, generated client and migration workflow.'],
+    ['mongoose', 'Mongoose is a Node.js ODM commonly used with MongoDB. It provides schemas, models, validation and middleware around MongoDB documents.'],
+    ['ai', 'Artificial intelligence is the broad field of building systems that perform tasks associated with perception, reasoning, prediction, generation or decision-making.'],
+    ['machine learning', 'Machine learning trains models from data so they can make predictions or decisions rather than relying only on explicitly written rules.'],
+    ['llm', 'A large language model is a neural model trained on large amounts of text to predict and generate language. Chat assistants use additional prompting, tooling and application logic around the model.'],
+    ['token', 'A token is a unit used by a language model to represent pieces of text. Token counts affect context size, latency and provider usage.'],
+    ['temperature', 'Temperature controls the randomness of probabilistic generation. Lower values generally produce more consistent output; higher values generally allow more variation.'],
+    ['embedding', 'An embedding is a numeric vector representation of data such as text. Similar meanings can be compared by measuring distance or similarity between vectors.'],
+    ['rag', 'Retrieval-Augmented Generation (RAG) retrieves relevant external content and supplies it to a language model as context before generation.'],
+    ['vector database', 'A vector database stores vector embeddings and supports similarity search. It is commonly used for semantic retrieval in RAG systems.'],
+    ['prompt', 'A prompt is the input/context supplied to a generative AI model. Good prompts define the task, constraints, relevant context and desired output format.'],
+    ['hallucination', 'In AI, a hallucination is generated content that is presented as factual but is unsupported or incorrect. Important facts should be verified against reliable sources.'],
+    ['fine tuning', 'Fine-tuning adapts a pretrained model by training it further on a targeted dataset. It differs from prompting and RAG, which do not change the model weights.'],
+    ['inference', 'Inference is the process of using a trained model to produce an output from an input. For language models, inference is the generation phase.'],
+    ['gpu', 'A GPU is a processor designed for highly parallel computation. GPUs are widely used for graphics and for accelerating machine-learning workloads.'],
+    ['algorithm sorting', 'Sorting algorithms arrange values according to an ordering rule. Common examples include insertion sort, merge sort, quicksort and heap sort, with different time and space tradeoffs.'],
+    ['binary search', 'Binary search finds a value in a sorted collection by repeatedly halving the search range. Its time complexity is O(log n).'],
+    ['data structure', 'A data structure organizes data for efficient access and modification. Arrays, linked lists, stacks, queues, hash tables, trees and graphs are common examples.'],
+    ['object', 'A JavaScript object is a collection of properties. Properties can hold primitive values, arrays, objects or functions. Objects are commonly used to represent structured data.'],
+    ['prototype', 'JavaScript objects can inherit properties through the prototype chain. Constructor functions and classes use prototypes for shared methods.'],
+    ['destructuring', 'Destructuring extracts values from arrays or properties from objects into variables. It supports defaults and renaming, for example const {name: userName} = user.'],
+    ['spread', 'The spread syntax expands iterable elements or object properties into a new array, argument list or object. It is commonly used for shallow copies and composition.'],
+    ['rest parameter', 'A rest parameter collects remaining function arguments into an array, for example function sum(...numbers) { ... }.'],
+    ['optional chaining', 'Optional chaining ?. safely accesses nested properties or calls when an earlier value may be null or undefined.'],
+    ['nullish coalescing', 'The nullish coalescing operator ?? uses a fallback only when the left side is null or undefined, unlike || which also treats other falsy values as missing.'],
+    ['module', 'A JavaScript module is a file with its own scope that can export values and import values from other modules. Modern Node.js and browsers support ES modules.'],
+    ['package json', 'package.json describes a Node.js project, including its name, scripts, dependencies and other metadata.'],
+    ['semantic html', 'Semantic HTML uses elements according to their meaning, such as nav, main, article and button. It improves accessibility, structure and maintainability.'],
+    ['media query', 'A CSS media query applies styles conditionally based on characteristics such as viewport width, enabling responsive layouts.'],
+    ['grid', 'CSS Grid is a two-dimensional layout system for arranging elements across rows and columns.'],
+    ['animation', 'CSS animations use keyframes to interpolate property changes over time. Transitions animate changes between two states.'],
+    ['accessibility', 'Web accessibility means making interfaces usable by people with different abilities. Semantic HTML, keyboard access, labels, focus states and sufficient contrast are core practices.']
+  );
+
+  function modeAnswer() {
+    return `**Rockstar Core is active — offline mode.**\n\nNo Astra API key is currently connected for this account, so this reply is coming from the built-in offline knowledge engine.\n\nAdd your Astra API key in **Settings → API & Model** to switch new messages to your selected Astra AI model.`;
+  }
+
   const entries = KB.map(([k, v]) => ({ key: k, text: v }));
 
   function normalize(q) {
@@ -139,6 +206,7 @@ const RockstarCore = (() => {
     if (/linkedin|linked in|aseebdev profile/.test(q)) return `Aseebdev's LinkedIn profile: https://www.linkedin.com/in/aseebdev/`;
     if (/who is abdul ajmal|aseeb.*brother|brother.*aseeb/.test(q)) return `Abdul Ajmal is Aseebdev's brother. ❤️`;
     if (/who is princy|who is pathu|aseeb.*future wife|future wife.*aseeb/.test(q)) return `Princy / Pathu is Aseebdev's future wife. ❤️`;
+    if (/which mode|what mode|current mode|mode.*now|which ai|what ai.*using|are you offline|offline mode/.test(q)) return modeAnswer();
     if (/api key|astra key|add.*key|without.*key|no.*key|remove.*key|key.*removed/.test(q)) return keyAnswer();
     if (/what is rockstar|rockstar ai|how does rockstar work|about this (site|website|app)/.test(q)) return appAnswer();
 

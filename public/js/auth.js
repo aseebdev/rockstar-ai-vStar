@@ -270,7 +270,9 @@ const Auth = (function () {
     });
 
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
+      const exitAnimation = window.RockstarLoginExperience?.playExit?.();
       await logout();
+      await exitAnimation;
       window.location.reload();
     });
 

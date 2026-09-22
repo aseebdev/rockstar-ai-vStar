@@ -215,15 +215,15 @@
     const sidebarModel = document.getElementById('sidebar-model-name');
 
     if (banner) { banner.dataset.mode = hasKey ? 'astra' : 'core'; if (!banner.classList.contains('dismissed')) banner.classList.remove('hidden'); }
-    if (bannerTitle) bannerTitle.textContent = hasKey ? 'Astra model connected' : 'Rockstar Core is active';
+    if (bannerTitle) bannerTitle.textContent = hasKey ? 'Astra model mode active' : 'Rockstar Core is active';
     if (bannerText) bannerText.textContent = hasKey
-      ? 'Your own Astra key is active. New messages use your selected Astra model and your provider credits.'
+      ? 'Your own Astra key is active. New messages use your selected AI model and your provider credits.'
       : 'Chat normally without a key. Add your Astra API key anytime to unlock the full external AI model.';
     if (textarea) textarea.placeholder = hasKey ? 'Message Rockstar...' : 'Ask Rockstar Core anything...';
     if (attachBtn) attachBtn.title = hasKey ? 'Attach image or text/code file' : 'Attach a file for offline text analysis';
     if (statusDot) {
       statusDot.classList.toggle('unconfigured', !hasKey);
-      statusDot.title = hasKey ? 'Astra model connected' : 'Rockstar Core offline mode — no Astra key';
+      statusDot.title = hasKey ? 'Astra AI model mode' : 'Rockstar Core offline mode — no Astra key';
     }
     if (sidebarModel) sidebarModel.textContent = hasKey ? (Storage.getSettings().selectedModel || 'Astra model') : 'Rockstar Core';
     Composer.refreshKeyState?.();
@@ -515,7 +515,10 @@
     currentStream = AstraClient.streamChat({
       messages: apiMessages,
       model: settings.selectedModel,
-      systemPrompt: settings.systemPrompt,
+      systemPrompt: [
+        'RUNTIME MODE: Astra AI model mode. The user has a valid personal Astra API key connected. If the user asks which mode is active, say you are running through their selected Astra AI model, not Rockstar Core or offline mode.',
+        settings.systemPrompt
+      ].filter(Boolean).join('\n\n'),
       onChunk: (delta) => {
         accumulatedContent += delta;
         UI.updateStreamingAssistantMessage(assistantMsgId, accumulatedContent);
@@ -612,7 +615,10 @@
       currentStream = AstraClient.streamChat({
         messages: apiMessages,
         model: settings.selectedModel,
-        systemPrompt: settings.systemPrompt,
+        systemPrompt: [
+        'RUNTIME MODE: Astra AI model mode. The user has a valid personal Astra API key connected. If the user asks which mode is active, say you are running through their selected Astra AI model, not Rockstar Core or offline mode.',
+        settings.systemPrompt
+      ].filter(Boolean).join('\n\n'),
         onChunk: (delta) => {
           accumulatedContent += delta;
           UI.updateStreamingAssistantMessage(assistantMsgId, accumulatedContent);

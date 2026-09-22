@@ -14,6 +14,7 @@ try { XLSX = require('xlsx'); } catch {}
 try { AdmZip = require('adm-zip'); } catch {}
 
 const ROCKSTAR_CREATOR_CONTEXT = `You are Rockstar AI, the AI interface created by Aseebdev (Abdul Aseeb), a Full-Stack MERN Developer focused on Cloud + AI Integration. If a user asks who created Rockstar AI, who Aseebdev is, or asks about the creator, answer accurately: Rockstar AI was created by Aseebdev (Abdul Aseeb). A small personal note from the creator is that he loves his brother Abdul Ajmal and his future wife Princy / Pathu. His LinkedIn profile is https://www.linkedin.com/in/aseebdev/. Do not invent additional personal facts.`;
+const ROCKSTAR_RUNTIME_CONTEXT = `RUNTIME MODE: ASTRA AI MODEL MODE. This request is being answered through the user's connected Astra AI model, not Rockstar Core and not the offline fallback. If the user asks what mode is active, state clearly that Astra AI model mode is active and name the selected model when known.`;
 
 async function userAstraKey(req) {
   const pool = getPool();
@@ -197,7 +198,7 @@ router.post('/chat',
       messages,
       model,
       temperature,
-      systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
+      systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${ROCKSTAR_RUNTIME_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
       signal: controller.signal,
       onChunk: (delta) => {
         if (!res.writableEnded) {
@@ -245,7 +246,7 @@ router.post('/chat',
         messages,
         model,
         temperature,
-        systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
+        systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${ROCKSTAR_RUNTIME_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
         signal: controller.signal,
         onChunk: (delta) => { fullText += delta; },
         onDone: ({ fullText: text, model: rModel, aborted }) => {

@@ -1117,3 +1117,32 @@ dialog.glass-dialog::backdrop {
   font-size: 18px;
 }
 .key-banner-close:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+
+
+/* v3.0 composer focus/mobile correction */
+.composer-card:focus-within {
+  border-color: color-mix(in srgb, var(--accent-primary) 48%, var(--border-glass-strong));
+  box-shadow: var(--shadow-lg), 0 0 0 1px color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+.composer-textarea:focus,
+.composer-textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.composer-textarea {
+  -webkit-tap-highlight-color: transparent;
+  caret-color: var(--accent-primary);
+}
+@media (max-width: 768px) {
+  .composer-wrapper { overflow: visible; }
+  .composer-bottom-bar { flex-wrap: nowrap; }
+  .composer-buttons { flex: 0 0 auto; }
+  .composer-textarea { touch-action: manipulation; }
+}
+
+
+.key-required-banner { animation: bannerSettle .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes bannerSettle { from { opacity: 0; transform: translateY(6px) scale(.99); } to { opacity: 1; transform: none; } }
+.composer-textarea::selection { background: rgba(124,58,237,.22); color: inherit; }
+.composer-textarea::-moz-selection { background: rgba(124,58,237,.22); color: inherit; }
