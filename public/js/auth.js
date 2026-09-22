@@ -185,6 +185,9 @@ const Auth = (function () {
     const emailInput = document.getElementById('auth-email');
     const passwordInput = document.getElementById('auth-password');
     const confirmPasswordInput = document.getElementById('auth-confirm-password');
+    const passwordToggle = document.getElementById('auth-password-toggle');
+    const confirmPasswordToggle = document.getElementById('auth-confirm-toggle');
+    const capslockStatus = document.getElementById('capslock-status');
     const confirmGroup = document.getElementById('auth-confirm-group');
     const submitBtn = document.getElementById('auth-submit');
     const switchBtn = document.getElementById('auth-switch');
@@ -193,6 +196,44 @@ const Auth = (function () {
     const errorEl = document.getElementById('auth-error');
 
     let mode = 'login';
+
+    function setPasswordVisibility(input, button, visible) {
+      if (!input || !button) return;
+      input.type = visible ? 'text' : 'password';
+      button.textContent = visible ? 'Hide' : 'Show';
+      button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
+      button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+    }
+
+    function updateCapsLock(event) {
+      if (!capslockStatus || !event) return;
+      const caps = typeof event.getModifierState === 'function' && event.getModifierState('CapsLock');
+      capslockStatus.textContent = caps ? '⇧ Caps Lock is ON' : '';
+      capslockStatus.classList.toggle('visible', caps);
+    }
+
+    passwordToggle?.addEventListener('click', () => {
+      const visible = passwordInput?.type === 'password';
+      setPasswordVisibility(passwordInput, passwordToggle, visible);
+      passwordInput?.focus();
+    });
+
+    confirmPasswordToggle?.addEventListener('click', () => {
+      const visible = confirmPasswordInput?.type === 'password';
+      setPasswordVisibility(confirmPasswordInput, confirmPasswordToggle, visible);
+      confirmPasswordInput?.focus();
+    });
+
+    [passwordInput, confirmPasswordInput].forEach(input => {
+      input?.addEventListener('keydown', updateCapsLock);
+      input?.addEventListener('keyup', updateCapsLock);
+      input?.addEventListener('blur', () => {
+        if (capslockStatus) {
+          capslockStatus.textContent = '';
+          capslockStatus.classList.remove('visible');
+        }
+      });
+    });
 
     if (user) {
       screen?.classList.add('hidden');
@@ -208,6 +249,12 @@ const Auth = (function () {
       if (submitBtn) submitBtn.textContent = signup ? 'Create Account' : 'Sign In';
       if (modeText) modeText.textContent = signup ? 'Already have an account?' : 'New to Rockstar AI?';
       if (switchBtn) switchBtn.textContent = signup ? 'Sign in' : 'Create account';
+      setPasswordVisibility(passwordInput, passwordToggle, false);
+      setPasswordVisibility(confirmPasswordInput, confirmPasswordToggle, false);
+      if (capslockStatus) {
+        capslockStatus.textContent = '';
+        capslockStatus.classList.remove('visible');
+      }
     }
 
     function showAuthError(message) {

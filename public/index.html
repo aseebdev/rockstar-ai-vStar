@@ -8,10 +8,10 @@
   <title>Rockstar AI</title>
 
   <!-- Design Tokens & CSS Modules -->
-  <link rel="stylesheet" href="/css/tokens.css?v=3.0.0">
-  <link rel="stylesheet" href="/css/main.css?v=3.0.0">
-  <link rel="stylesheet" href="/css/components.css?v=3.0.0">
-  <link rel="stylesheet" href="/css/markdown.css?v=3.0.0">
+  <link rel="stylesheet" href="/css/tokens.css?v=3.3.0">
+  <link rel="stylesheet" href="/css/main.css?v=3.3.0">
+  <link rel="stylesheet" href="/css/components.css?v=3.3.0">
+  <link rel="stylesheet" href="/css/markdown.css?v=3.3.0">
 </head>
 <body>
 
@@ -68,7 +68,8 @@
 
   <!-- Authentication Gate -->
   <section id="auth-screen" class="auth-screen" aria-label="Rockstar AI authentication">
-    <div class="auth-card glass-panel">
+    <div class="auth-layout">
+      <div class="auth-card glass-panel">
       <div class="auth-brand">
         <div class="rockstar-mark">✦</div>
         <div>
@@ -91,11 +92,21 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="auth-password">Password</label>
-          <input id="auth-password" class="form-input" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters">
+          <div class="password-field">
+            <input id="auth-password" class="form-input password-input" type="password" minlength="8" maxlength="128" autocomplete="current-password" required placeholder="At least 8 characters">
+            <button id="auth-password-toggle" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+          <div class="password-status-row">
+            <span id="capslock-status" class="capslock-status" role="status" aria-live="polite"></span>
+            <span class="password-hint">8–128 characters</span>
+          </div>
         </div>
         <div id="auth-confirm-group" class="form-group hidden">
           <label class="form-label" for="auth-confirm-password">Confirm password</label>
-          <input id="auth-confirm-password" class="form-input" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="Repeat your password">
+          <div class="password-field">
+            <input id="auth-confirm-password" class="form-input password-input" type="password" minlength="8" maxlength="128" autocomplete="new-password" placeholder="Repeat your password">
+            <button id="auth-confirm-toggle" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
         </div>
         <div id="auth-error" class="auth-error" role="alert"></div>
         <button id="auth-submit" class="btn btn-primary auth-submit" type="submit">Sign In</button>
@@ -110,6 +121,42 @@
         🔐 AI usage is <strong>BYOK</strong>: every user supplies their own Astra API key.
         Your key is encrypted and saved to your account until you remove it.
       </div>
+      </div>
+
+      <aside class="auth-help-panel" aria-label="Rockstar AI setup and creator information">
+        <div class="auth-help-glow" aria-hidden="true"></div>
+        <div class="auth-help-topline"><span class="help-dot"></span> GET STARTED</div>
+        <h2>Bring your own AI.</h2>
+        <p class="auth-help-lead">Connect your own Astra API key and use your selected AI model inside Rockstar AI.</p>
+
+        <a class="api-key-cta" href="https://platform.experientiallabs.ai/models" target="_blank" rel="noopener noreferrer">
+          <span class="api-key-cta-icon" aria-hidden="true">↗</span>
+          <span><strong>Get your AI model API key</strong><small>Open Experiential Labs → Models</small></span>
+        </a>
+
+        <div class="auth-help-divider"></div>
+
+        <div class="auth-help-section">
+          <span class="auth-help-label">HOW IT WORKS</span>
+          <ol class="auth-steps">
+            <li><span>01</span><div><strong>Create an Experiential Labs account</strong><small>Open the models page and sign in or create your account.</small></div></li>
+            <li><span>02</span><div><strong>Create your API key</strong><small>Choose the model you want to use and copy your key.</small></div></li>
+            <li><span>03</span><div><strong>Paste it into Rockstar AI</strong><small>Your key is encrypted before it is saved to your account.</small></div></li>
+          </ol>
+        </div>
+
+        <div class="auth-help-divider"></div>
+
+        <div class="auth-creator">
+          <div class="creator-mini-avatar">AA</div>
+          <div class="creator-mini-copy">
+            <span class="auth-help-label">CREATED BY</span>
+            <strong>Abdul Aseeb</strong>
+            <small>Full-Stack MERN Developer • Cloud + AI Integration</small>
+            <a href="https://www.linkedin.com/in/aseebdev/" target="_blank" rel="noopener noreferrer">Connect on LinkedIn ↗</a>
+          </div>
+        </div>
+      </aside>
     </div>
   </section>
 
@@ -619,15 +666,15 @@
   </dialog>
 
   <!-- Client JavaScript Modules -->
-  <script src="/js/login-experience.js?v=3.0.0"></script>
-  <script src="/js/auth.js?v=3.0.0"></script>
-  <script src="/js/markdown.js?v=3.0.0"></script>
-  <script src="/js/storage.js?v=3.0.0"></script>
-  <script src="/js/astra-client.js?v=3.0.0"></script>
-  <script src="/js/local-engine.js?v=3.0.0"></script>
-  <script src="/js/ui.js?v=3.0.0"></script>
-  <script src="/js/composer.js?v=3.0.0"></script>
-  <script src="/js/settings.js?v=3.0.0"></script>
-  <script src="/js/app.js?v=3.0.0"></script>
+  <script src="/js/login-experience.js?v=3.3.0"></script>
+  <script src="/js/auth.js?v=3.3.0"></script>
+  <script src="/js/markdown.js?v=3.3.0"></script>
+  <script src="/js/storage.js?v=3.3.0"></script>
+  <script src="/js/astra-client.js?v=3.3.0"></script>
+  <script src="/js/local-engine.js?v=3.3.0"></script>
+  <script src="/js/ui.js?v=3.3.0"></script>
+  <script src="/js/composer.js?v=3.3.0"></script>
+  <script src="/js/settings.js?v=3.3.0"></script>
+  <script src="/js/app.js?v=3.3.0"></script>
 </body>
 </html>
