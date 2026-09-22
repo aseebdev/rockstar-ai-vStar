@@ -194,6 +194,10 @@ const Auth = (function () {
     const modeTitle = document.getElementById('auth-title');
     const modeText = document.getElementById('auth-switch-text');
     const errorEl = document.getElementById('auth-error');
+    const passwordTools = document.getElementById('password-tools');
+    const generatePasswordBtn = document.getElementById('generate-password');
+    const passwordStrength = document.getElementById('password-strength');
+    const browserAutofillNote = document.getElementById('browser-autofill-note');
 
     let mode = 'login';
 
@@ -211,6 +215,63 @@ const Auth = (function () {
       capslockStatus.textContent = caps ? '⇧ Caps Lock is ON' : '';
       capslockStatus.classList.toggle('visible', caps);
     }
+
+
+    function passwordStrengthLabel(value) {
+      const password = String(value || '');
+      if (!password) return '';
+      let score = 0;
+      if (password.length >= 12) score++;
+      if (password.length >= 16) score++;
+      if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+      if (/\d/.test(password)) score++;
+      if (/[^A-Za-z0-9]/.test(password)) score++;
+      if (score >= 5) return 'Strong';
+      if (score >= 3) return 'Good';
+      return 'Needs improvement';
+    }
+
+    function updatePasswordStrength() {
+      if (!passwordStrength) return;
+      const label = mode === 'register' ? passwordStrengthLabel(passwordInput?.value) : '';
+      passwordStrength.textContent = label ? `• ${label}` : '';
+      passwordStrength.classList.toggle('strong', label === 'Strong');
+      passwordStrength.classList.toggle('good', label === 'Good');
+    }
+
+    function generateStrongPassword() {
+      const length = 20;
+      const groups = [
+        'ABCDEFGHJKLMNPQRSTUVWXYZ',
+        'abcdefghijkmnopqrstuvwxyz',
+        '23456789',
+        '!@#$%^&*_-+='
+      ];
+      const pick = group => group[crypto.getRandomValues(new Uint32Array(1))[0] % group.length];
+      const chars = groups.map(pick);
+      const all = groups.join('');
+      while (chars.length < length) chars.push(pick(all));
+      for (let i = chars.length - 1; i > 0; i--) {
+        const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+      }
+      return chars.join('');
+    }
+
+    generatePasswordBtn?.addEventListener('click', () => {
+      if (!passwordInput || mode !== 'register') return;
+      const generated = generateStrongPassword();
+      passwordInput.value = generated;
+      if (confirmPasswordInput) confirmPasswordInput.value = generated;
+      setPasswordVisibility(passwordInput, passwordToggle, true);
+      setPasswordVisibility(confirmPasswordInput, confirmPasswordToggle, true);
+      updatePasswordStrength();
+      passwordInput.focus();
+      passwordInput.setSelectionRange(generated.length, generated.length);
+    });
+
+    passwordInput?.addEventListener('input', updatePasswordStrength);
+    confirmPasswordInput?.addEventListener('input', updatePasswordStrength);
 
     passwordToggle?.addEventListener('click', () => {
       const visible = passwordInput?.type === 'password';
@@ -251,6 +312,10 @@ const Auth = (function () {
       if (switchBtn) switchBtn.textContent = signup ? 'Sign in' : 'Create account';
       setPasswordVisibility(passwordInput, passwordToggle, false);
       setPasswordVisibility(confirmPasswordInput, confirmPasswordToggle, false);
+      if (passwordTools) passwordTools.classList.toggle('hidden', !signup);
+      if (browserAutofillNote) browserAutofillNote.classList.toggle('hidden', !signup);
+      if (passwordInput) passwordInput.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+      updatePasswordStrength();
       if (capslockStatus) {
         capslockStatus.textContent = '';
         capslockStatus.classList.remove('visible');

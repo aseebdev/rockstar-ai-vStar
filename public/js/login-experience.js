@@ -176,21 +176,35 @@
 
     // A slow, spring-like liquid-glass figure follows the pointer.
     if (person && window.matchMedia('(pointer:fine)').matches) {
-      let targetX = 0, targetY = 0, currentX = 0, currentY = 0, raf = 0;
+      const head = document.getElementById('person-head');
+      const upper = document.getElementById('person-upper');
+      let targetX = 0, targetY = 0, currentX = 0, currentY = 0;
+      let targetHeadX = 0, targetHeadY = 0, currentHeadX = 0, currentHeadY = 0;
+      let targetTilt = 0, currentTilt = 0, raf = 0;
       const move = (event) => {
-        targetX = (event.clientX / window.innerWidth - .5) * 34;
-        targetY = (event.clientY / window.innerHeight - .5) * 22;
+        const nx = (event.clientX / window.innerWidth - .5);
+        const ny = (event.clientY / window.innerHeight - .5);
+        targetX = nx * 42;
+        targetY = ny * 28;
+        targetHeadX = nx * 10;
+        targetHeadY = ny * 6;
+        targetTilt = nx * 2.2;
         if (!raf) raf = requestAnimationFrame(tick);
       };
       const tick = () => {
-        currentX += (targetX - currentX) * .045;
-        currentY += (targetY - currentY) * .045;
-        person.style.transform = `translate3d(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px), 0)`;
-        if (Math.abs(targetX-currentX) > .05 || Math.abs(targetY-currentY) > .05) raf = requestAnimationFrame(tick);
+        currentX += (targetX - currentX) * .035;
+        currentY += (targetY - currentY) * .035;
+        currentHeadX += (targetHeadX - currentHeadX) * .075;
+        currentHeadY += (targetHeadY - currentHeadY) * .075;
+        currentTilt += (targetTilt - currentTilt) * .055;
+        person.style.transform = `translate3d(calc(-50% + ${currentX}px), calc(-50% + ${currentY}px), 0) rotate(${currentTilt * .28}deg)`;
+        if (head) head.style.transform = `translate(${currentHeadX}px, ${currentHeadY}px) rotate(${currentTilt}deg)`;
+        if (upper) upper.style.transform = `translate(${currentX * .035}px, ${currentY * .035}px) rotate(${currentTilt * .32}deg)`;
+        if (Math.abs(targetX-currentX) > .05 || Math.abs(targetY-currentY) > .05 || Math.abs(targetHeadX-currentHeadX) > .03 || Math.abs(targetTilt-currentTilt) > .02) raf = requestAnimationFrame(tick);
         else raf = 0;
       };
       window.addEventListener('pointermove', move, { passive: true });
-      window.addEventListener('pointerleave', () => { targetX = 0; targetY = 0; if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
+      window.addEventListener('pointerleave', () => { targetX = 0; targetY = 0; targetHeadX = 0; targetHeadY = 0; targetTilt = 0; if (!raf) raf = requestAnimationFrame(tick); }, { passive: true });
     }
   }
 

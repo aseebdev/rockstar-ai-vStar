@@ -82,7 +82,8 @@
             <filter id="bodyBlur"><feGaussianBlur stdDeviation="4.5"/></filter>
           </defs>
           <g fill="none" stroke="url(#bodyGlow)" stroke-linecap="round" stroke-linejoin="round" filter="url(#bodyBlur)">
-            <circle cx="120" cy="55" r="31" stroke-width="9"/>
+            <circle id="person-head" cx="120" cy="55" r="31" stroke-width="9"/>
+            <g id="person-upper">
             <path d="M99 91 C95 105 94 116 93 130 M141 91 C145 105 146 116 147 130" stroke-width="10"/>
             <path d="M92 112 C68 122 49 143 42 173 M148 112 C172 122 191 143 198 173" stroke-width="12"/>
             <path d="M120 101 C111 145 110 198 114 250 M120 101 C129 145 130 198 126 250" stroke-width="8"/>
@@ -91,6 +92,7 @@
             <path d="M91 264 L82 366 L68 470 M149 264 L158 366 L172 470" stroke-width="12"/>
             <path d="M91 266 L54 348 L30 418 M149 266 L186 348 L210 418" stroke-width="10"/>
             <path d="M68 470 L48 486 M172 470 L192 486 M30 418 L24 432 M210 418 L216 432" stroke-width="9"/>
+            </g>
           </g>
         </svg>
       </div>
@@ -112,14 +114,18 @@
       <h1 id="auth-title">Welcome back</h1>
       <p class="auth-subtitle">Sign in to access your private AI workspace.</p>
 
+      <div id="browser-autofill-note" class="browser-autofill-note hidden" role="status">
+        <span aria-hidden="true">⌁</span> Your browser may offer saved name and email details here. Review them and edit anything you want.
+      </div>
+
       <form id="auth-form" class="auth-form">
         <div id="auth-name-group" class="form-group hidden">
           <label class="form-label" for="auth-name">Name</label>
-          <input id="auth-name" class="form-input" type="text" maxlength="60" autocomplete="name" placeholder="Your name">
+          <input id="auth-name" class="form-input" type="text" maxlength="60" autocomplete="name" inputmode="text" placeholder="Your name">
         </div>
         <div class="form-group">
           <label class="form-label" for="auth-email">Email</label>
-          <input id="auth-email" class="form-input" type="email" maxlength="160" autocomplete="email" required placeholder="you@example.com">
+          <input id="auth-email" class="form-input" type="email" maxlength="160" autocomplete="email" inputmode="email" required placeholder="you@example.com">
         </div>
         <div class="form-group">
           <label class="form-label" for="auth-password">Password</label>
@@ -129,7 +135,12 @@
           </div>
           <div class="password-status-row">
             <span id="capslock-status" class="capslock-status" role="status" aria-live="polite"></span>
+            <span id="password-strength" class="password-strength" role="status" aria-live="polite"></span>
             <span class="password-hint">8–128 characters</span>
+          </div>
+          <div id="password-tools" class="password-tools hidden">
+            <button id="generate-password" class="password-generate" type="button">✦ Generate strong password</button>
+            <span class="password-tool-note">You can use it or type your own.</span>
           </div>
         </div>
         <div id="auth-confirm-group" class="form-group hidden">
@@ -706,7 +717,7 @@
   </dialog>
 
   <!-- Client JavaScript Modules -->
-  <script src="/js/login-experience.js?v=3.4.0"></script>
+  <script src="/js/login-experience.js?v=3.5.0"></script>
   <script src="/js/auth.js?v=3.4.0"></script>
   <script src="/js/markdown.js?v=3.4.0"></script>
   <script src="/js/storage.js?v=3.4.0"></script>

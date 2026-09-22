@@ -242,6 +242,16 @@ textarea:focus-visible {
   color: var(--text-tertiary);
   font-size: 10px;
 }
+.password-strength { color:var(--text-tertiary); font-size:9px; min-width:0; transition:color .2s ease, opacity .2s ease; }
+.password-strength.good { color:#fbbf24; }
+.password-strength.strong { color:#34d399; }
+.password-tools { display:flex; align-items:center; gap:9px; margin-top:7px; min-height:25px; }
+.password-generate { border:1px solid rgba(103,232,249,.18); border-radius:9px; padding:6px 9px; background:rgba(103,232,249,.045); color:var(--text-secondary); font:700 9px/1 inherit; cursor:pointer; transition:transform .2s ease,border-color .2s ease,background .2s ease,color .2s ease; }
+.password-generate:hover,.password-generate:focus-visible { transform:translateY(-1px); border-color:rgba(103,232,249,.38); background:rgba(103,232,249,.08); color:var(--text-primary); outline:none; }
+.password-tool-note { color:var(--text-tertiary); font-size:8px; }
+.browser-autofill-note { display:flex; align-items:flex-start; gap:7px; margin:0 0 11px; padding:8px 10px; border:1px solid rgba(255,255,255,.07); border-radius:10px; color:var(--text-tertiary); background:rgba(255,255,255,.022); font-size:8px; line-height:1.45; }
+.browser-autofill-note > span { color:#67e8f9; font-size:13px; line-height:1; }
+
 
 .auth-help-panel {
   position: relative;
@@ -1019,7 +1029,7 @@ textarea:focus-visible {
 }
 
 /* =============================================================================
-   ROCKSTAR AI v3.4 — cinematic API-key panel + liquid cursor guardian
+   ROCKSTAR AI v3.5 — cinematic API-key panel + liquid cursor guardian
    ============================================================================= */
 .auth-screen { overflow: hidden; isolation: isolate; }
 .auth-liquid-atmosphere { position:absolute; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
@@ -1073,3 +1083,11 @@ textarea:focus-visible {
   .auth-card,.auth-help-panel,.auth-shard,.api-help-trigger,.api-help-back,.liquid-person { transition:none !important; }
   .liquid-ripple { animation:none; }
 }
+
+/* v3.5 — organic liquid-glass cursor guardian */
+.liquid-person { transform-origin:50% 50%; transition:filter .35s ease, opacity .35s ease; }
+.liquid-person::after { content:""; position:absolute; inset:10% 18%; border-radius:48% 52% 46% 54%; background:radial-gradient(ellipse at 50% 38%,rgba(255,255,255,.08),transparent 56%); filter:blur(18px); opacity:.35; }
+#person-head, #person-upper { transform-box:fill-box; transform-origin:center; }
+#person-head { transition:transform .18s cubic-bezier(.2,.75,.2,1); }
+#person-upper { transition:transform .3s cubic-bezier(.2,.75,.2,1); }
+@media (max-width:768px) { .liquid-person::after { display:none; } }
