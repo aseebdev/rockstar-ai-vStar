@@ -519,9 +519,7 @@
       await loadConversations();
     } catch (err) {
       UI.finishImageGenerationMessage(progressId);
-      const message = err?.status === 503
-        ? 'Image generation is not connected yet. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment, then retry. Rockstar will never fake an image result.'
-        : (err.message || 'Image generation failed.');
+      const message = err?.message || 'Image generation failed.';
       const assistant = await Storage.addMessage({ conversationId: activeConversationId, role:'assistant', content:`**Image tool:** ${message}`, model:'tool-error' });
       UI.appendMessage(assistant, true);
       UI.showToast(message, 'error', 8000);

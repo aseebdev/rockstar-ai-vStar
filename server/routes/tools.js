@@ -5,6 +5,7 @@ const { requireAuth } = require('../auth');
 const { rateLimit } = require('../middleware/security');
 const { getPool, newId } = require('../db');
 const { tavilySearch, openAIImage, executeCode, createFile, envBool } = require('../services/tools');
+const logger = require('../utils/logger');
 
 function poolOr503(res) { const p = getPool(); if (!p) { res.status(503).json({ error:{message:'Database is not configured.'} }); return null; } return p; }
 function hashToken(v) { return crypto.createHash('sha256').update(v).digest('hex'); }
@@ -43,10 +44,15 @@ async function persistGeneratedImages(req, images, conversationId = null) {
     if (buffer.length > 12 * 1024 * 1024) throw Object.assign(new Error('Generated image exceeds 12 MB.'), { statusCode: 413 });
     const id = newId();
     const filename = `rockstar-${Date.now()}-${i + 1}.png`;
-    await p.query(
-      'INSERT INTO generated_files (id,user_id,conversation_id,filename,mime_type,size_bytes,data,expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-      [id, req.user.sub, conversationId, filename, 'image/png', buffer.length, buffer, new Date(Date.now() + 7 * 86400000)]
-    );
+    try {
+      await p.query(
+        'INSERT INTO generated_files (id,user_id,conversation_id,filename,mime_type,size_bytes,data,expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+        [id, req.user.sub, conversationId, filename, 'image/png', buffer.length, buffer, new Date(Date.now() + 7 * 86400000)]
+      );
+    } catch (dbError) {
+      logger.error(`[IMAGE][${req.imageRequestId || 'unknown'}] Failed to persist generated image:`, dbError);
+      throw Object.assign(new Error('The image was generated, but Rockstar could not save it. Please try again.'), { statusCode: 503, expose: true, code: 'IMAGE_PERSIST_FAILED' });
+    }
     files.push({ id, filename, mimeType: 'image/png', size: buffer.length, downloadUrl: `/api/tools/files/${id}`, inlineUrl: `/api/tools/files/${id}?inline=1`, revisedPrompt: images[i]?.revisedPrompt || null });
   }
   return files;
@@ -56,26 +62,56 @@ async function readDataUrl(dataUrl) {
   const m=String(dataUrl||'').match(/^data:([^;]+);base64,(.+)$/s); if(!m) throw Object.assign(new Error('A valid image data URL is required.'),{statusCode:400});
   const b=Buffer.from(m[2],'base64'); if(b.length>8*1024*1024) throw Object.assign(new Error('Image exceeds 8 MB.'),{statusCode:413}); return {mime:m[1],buffer:b};
 }
-router.post('/image/generate', rateLimit({windowMs:60000,max:5,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{
+router.post('/image/generate', rateLimit({windowMs:60000,max:5,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res)=>{
+  const requestId = crypto.randomUUID();
+  req.imageRequestId = requestId;
   try {
     const prompt=String(req.body?.prompt||'').trim();
-    if(!prompt) return res.status(400).json({error:{message:'Image prompt is required.'}});
+    if(!prompt) return res.status(400).json({error:{message:'Image prompt is required.',requestId}});
+
+    logger.info(`[IMAGE][${requestId}] Generation started for user ${req.user?.sub || 'unknown'}`);
     const images=await openAIImage({prompt,size:req.body?.size,quality:req.body?.quality,background:req.body?.background,n:req.body?.n});
     const files=await persistGeneratedImages(req,images,req.body?.conversationId||null);
     await audit(req,'image.generate','image',null,{count:files.length});
-    res.json({ok:true,images:files});
-  } catch(e){next(e)}
+    logger.info(`[IMAGE][${requestId}] Generation completed: ${files.length} image(s)`);
+    res.json({ok:true,images:files,requestId});
+  } catch(e){
+    const status = Number(e?.statusCode || e?.status || 500);
+    logger.error(`[IMAGE][${requestId}] Generation failed with status ${status}:`, e);
+    if (res.headersSent) return;
+
+    // Never expose arbitrary internal/database errors. Provider errors marked by
+    // the Cloudflare adapter are already sanitized there and are safe to return.
+    const providerMessage = e?.provider === 'cloudflare' && e?.message ? e.message : null;
+    const safeMessage = providerMessage || (e?.expose && e?.message ? e.message : 'Image generation failed on the server. Please try again.');
+    res.status(status >= 400 && status <= 599 ? status : 500).json({
+      error: { message: safeMessage, status: status >= 400 && status <= 599 ? status : 500, requestId }
+    });
+  }
 });
-router.post('/image/edit', rateLimit({windowMs:60000,max:5,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{
+router.post('/image/edit', rateLimit({windowMs:60000,max:5,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res)=>{
+  const requestId = crypto.randomUUID();
+  req.imageRequestId = requestId;
   try {
     const {buffer,mime}=await readDataUrl(req.body?.image);
     const prompt=String(req.body?.prompt||'').trim();
-    if(!prompt) return res.status(400).json({error:{message:'Edit instruction is required.'}});
+    if(!prompt) return res.status(400).json({error:{message:'Edit instruction is required.',requestId}});
+    logger.info(`[IMAGE-EDIT][${requestId}] Edit started for user ${req.user?.sub || 'unknown'}`);
     const images=await openAIImage({prompt,imageBuffer:buffer,imageMime:mime,size:req.body?.size,quality:req.body?.quality,background:req.body?.background,n:1});
     const files=await persistGeneratedImages(req,images,req.body?.conversationId||null);
     await audit(req,'image.edit','image',null,{count:files.length});
-    res.json({ok:true,images:files});
-  } catch(e){next(e)}
+    logger.info(`[IMAGE-EDIT][${requestId}] Edit completed: ${files.length} image(s)`);
+    res.json({ok:true,images:files,requestId});
+  } catch(e){
+    const status = Number(e?.statusCode || e?.status || 500);
+    logger.error(`[IMAGE-EDIT][${requestId}] Edit failed with status ${status}:`, e);
+    if (res.headersSent) return;
+    const providerMessage = e?.provider === 'cloudflare' && e?.message ? e.message : null;
+    const safeMessage = providerMessage || (e?.expose && e?.message ? e.message : 'Image editing failed on the server. Please try again.');
+    res.status(status >= 400 && status <= 599 ? status : 500).json({
+      error: { message: safeMessage, status: status >= 400 && status <= 599 ? status : 500, requestId }
+    });
+  }
 });
 
 router.post('/code/execute', rateLimit({windowMs:60000,max:10,keyFn:req=>req.user?.sub||req.ip}), requireAuth, async(req,res,next)=>{

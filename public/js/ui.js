@@ -97,8 +97,9 @@ const UI = (function () {
   }
 
   function formatTime(timestamp) {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
+    if (timestamp === null || timestamp === undefined || timestamp === '') return '';
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
