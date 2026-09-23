@@ -18,8 +18,8 @@ router.get('/status', requireAuth, async (req,res,next)=>{
   try {
     res.json({ ok:true, tools:{
       webSearch: Boolean(process.env.TAVILY_API_KEY),
-      imageGeneration: Boolean(process.env.OPENAI_API_KEY),
-      imageEditing: Boolean(process.env.OPENAI_API_KEY),
+      imageGeneration: Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN),
+      imageEditing: Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN),
       codeExecution: envBool('ENABLE_CODE_EXECUTION', false) && Boolean(process.env.PISTON_BASE_URL || 'https://emkc.org/api/v2/piston'),
       docx: true, xlsx: true, pptx: true, pdf: true, voiceTts: Boolean(process.env.OPENAI_API_KEY), voiceTranscription: Boolean(process.env.OPENAI_API_KEY),
       sharing: Boolean(getPool()), jobs: Boolean(getPool()), audit: Boolean(getPool())

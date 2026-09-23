@@ -47,8 +47,8 @@ router.get('/capabilities', requireAuth, async (req, res, next) => {
         fileAnalysis: true,
         documentExport: true,
         webSearch: Boolean(process.env.TAVILY_API_KEY),
-        imageGeneration: Boolean(process.env.OPENAI_API_KEY),
-        imageEditing: Boolean(process.env.OPENAI_API_KEY),
+        imageGeneration: Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN),
+        imageEditing: Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN),
         codeExecution: process.env.ENABLE_CODE_EXECUTION === 'true',
         voiceBrowser: true,
         voiceTts: Boolean(process.env.OPENAI_API_KEY),
@@ -59,7 +59,7 @@ router.get('/capabilities', requireAuth, async (req, res, next) => {
       },
       notes: {
         webSearch: process.env.TAVILY_API_KEY ? 'Tavily web search connected.' : 'Add TAVILY_API_KEY to connect web search.',
-        imageGeneration: process.env.OPENAI_API_KEY ? 'OpenAI image generation/editing connected.' : 'Add OPENAI_API_KEY to connect image generation/editing.',
+        imageGeneration: (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN) ? 'Cloudflare Workers AI image generation/editing connected.' : 'Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to connect image generation/editing.',
         codeExecution: process.env.ENABLE_CODE_EXECUTION === 'true' ? 'Remote sandbox execution enabled through the configured Piston endpoint.' : 'Code execution is disabled until a sandbox endpoint is configured.'
       }
     });

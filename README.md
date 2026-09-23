@@ -139,7 +139,7 @@ The multimodal tool layer is now implemented as backend-controlled adapters. The
 Set `TAVILY_API_KEY`. Rockstar uses the server-side Tavily search adapter, records an audit event, and returns source URLs/titles/dates. Current-oriented chat requests automatically attempt the web tool; if it is unavailable, Rockstar tells the model not to claim live verification.
 
 ### 2. Real image generation + editing
-Set `OPENAI_API_KEY`. The server exposes `/api/tools/image/generate` and `/api/tools/image/edit`, with size/quality/background controls. Generated images are persisted as authenticated generated files and can be rendered inline or downloaded by the owning account.
+Set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`. The server exposes `/api/tools/image/generate` and `/api/tools/image/edit` through Cloudflare Workers AI, using `@cf/black-forest-labs/flux-2-klein-4b` by default. Generated images are persisted as authenticated generated files and can be rendered inline or downloaded by the owning account.
 
 ### 3. Secure code execution
 Set `ENABLE_CODE_EXECUTION=true` and configure `PISTON_BASE_URL` to a self-hosted/authorized Piston sandbox. Optional `PISTON_API_KEY` is supported. The application never executes arbitrary user code inside the Rockstar Node process.
@@ -166,7 +166,6 @@ In addition to the existing Astra/database/session variables, configure the prov
 ```env
 TAVILY_API_KEY=
 OPENAI_API_KEY=
-OPENAI_IMAGE_MODEL=gpt-image-2
 OPENAI_TTS_MODEL=gpt-4o-mini-tts
 OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
 ASTRA_MAX_MESSAGES=36
@@ -178,3 +177,8 @@ PUBLIC_BASE_URL=https://your-domain.example
 ```
 
 Do not commit these values. Use Vercel Environment Variables for production.
+
+
+## Image generation provider
+
+Rockstar AI uses Cloudflare Workers AI for image generation and editing by default. Configure `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; the default model is `@cf/black-forest-labs/flux-2-klein-4b`. Cloudflare documents this model as supporting text-to-image and image editing with up to four reference images. Workers AI currently includes a 10,000-neuron daily free allocation on the Free plan; usage beyond that requires Workers Paid.

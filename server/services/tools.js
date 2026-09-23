@@ -22,31 +22,54 @@ async function tavilySearch({ query, maxResults = 8, topic = 'general' }) {
   };
 }
 
-async function openAIImage({ prompt, imageBuffer, imageMime = 'image/png', size = '1024x1024', quality = 'auto', background = 'auto', n = 1 }) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw Object.assign(new Error('Image generation is not configured. Add OPENAI_API_KEY to the server environment.'), { statusCode: 503 });
-  const base = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
-  let response;
-  if (imageBuffer) {
-    const form = new FormData();
-    form.append('model', process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2');
-    form.append('prompt', prompt || 'Edit this image.');
-    form.append('size', size);
-    form.append('quality', quality);
-    form.append('background', background);
-    form.append('n', String(Math.min(Math.max(Number(n) || 1, 1), 4)));
-    form.append('image', new Blob([imageBuffer], { type: imageMime }), 'input.png');
-    response = await fetch(`${base}/images/edits`, { method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: form });
-  } else {
-    response = await fetch(`${base}/images/generations`, {
-      method: 'POST', headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ model: process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2', prompt, size, quality, background, n: Math.min(Math.max(Number(n) || 1, 1), 4) })
-    });
+async function cloudflareImage({ prompt, imageBuffer, imageMime = 'image/png', size = '1024x1024', n = 1 }) {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!accountId || !token) {
+    throw Object.assign(new Error('Image generation is not configured. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment.'), { statusCode: 503 });
   }
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(data?.error?.message || `Image provider failed (${response.status}).`), { statusCode: response.status });
-  return (data.data || []).map(item => ({ b64: item.b64_json, revisedPrompt: item.revised_prompt || null }));
+
+  const model = process.env.CLOUDFLARE_IMAGE_MODEL || '@cf/black-forest-labs/flux-2-klein-4b';
+  const base = (process.env.CLOUDFLARE_AI_BASE_URL || 'https://api.cloudflare.com/client/v4').replace(/\/$/, '');
+  const [rawW, rawH] = String(size || '1024x1024').split('x').map(Number);
+  const width = Math.min(Math.max(Number.isFinite(rawW) ? rawW : 1024, 256), 1920);
+  const height = Math.min(Math.max(Number.isFinite(rawH) ? rawH : 1024, 256), 1920);
+  const count = Math.min(Math.max(Number(n) || 1, 1), 1);
+
+  const makeRequest = async () => {
+    const form = new FormData();
+    form.append('prompt', String(prompt || 'Create an image.').slice(0, 2048));
+    form.append('width', String(width));
+    form.append('height', String(height));
+    if (imageBuffer) {
+      if (imageBuffer.length > 8 * 1024 * 1024) {
+        throw Object.assign(new Error('Input image exceeds 8 MB.'), { statusCode: 413 });
+      }
+      form.append('input_image_0', new Blob([imageBuffer], { type: imageMime || 'image/png' }), 'input.png');
+    }
+    const response = await fetch(`${base}/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = data?.errors?.map?.(e => e?.message).filter(Boolean).join('; ');
+      throw Object.assign(new Error(detail || data?.error || `Cloudflare image provider failed (${response.status}).`), { statusCode: response.status });
+    }
+    const b64 = data?.result?.image;
+    if (!b64) throw Object.assign(new Error('Cloudflare image provider returned no image.'), { statusCode: 502 });
+    return { b64, revisedPrompt: null };
+  };
+
+  const images = [];
+  for (let i = 0; i < count; i++) images.push(await makeRequest());
+  return images;
 }
+
+// Kept as the stable internal name used by the existing tool routes. Image generation
+// now defaults to Cloudflare Workers AI, so OpenAI image credits are not required.
+const openAIImage = cloudflareImage;
 
 const LANGUAGE_ALIASES = { js: 'javascript', node: 'javascript', nodejs: 'javascript', py: 'python', ts: 'typescript', sh: 'bash', shell: 'bash', cplusplus: 'cpp' };
 async function executeCode({ language, version = '*', code, stdin = '' }) {
