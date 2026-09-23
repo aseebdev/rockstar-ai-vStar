@@ -650,7 +650,7 @@
       <!-- Tab 4: Data & Backup -->
       <div id="tab-data" class="tab-content" role="tabpanel">
         <div class="form-group">
-          <label class="form-label">Export Conversations</label>
+          <div class="form-label" role="heading" aria-level="3">Export Conversations</div>
           <div class="form-desc">Download a complete JSON backup of all your conversations and messages.</div>
           <button type="button" id="btn-export-data" class="btn btn-secondary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -659,7 +659,7 @@
         </div>
 
         <div class="form-group" style="margin-top: var(--space-5);">
-          <label class="form-label">Import Conversations</label>
+          <div class="form-label" role="heading" aria-level="3">Import Conversations</div>
           <div class="form-desc">Restore or merge conversations from a previously exported JSON backup.</div>
           <input type="file" id="import-file-input" accept=".json" class="hidden">
           <button type="button" id="btn-import-data" class="btn btn-secondary">
@@ -669,7 +669,7 @@
         </div>
 
         <div class="form-group" style="margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--border-glass);">
-          <label class="form-label" style="color: var(--danger);">Danger Zone</label>
+          <div class="form-label" role="heading" aria-level="3" style="color: var(--danger);">Danger Zone</div>
           <div class="form-desc">Permanently wipe all conversation history and messages from your local browser storage.</div>
           <button type="button" id="btn-clear-all-data" class="btn btn-danger">
             Clear All History
@@ -777,7 +777,7 @@
   <script src="/js/ui.js?v=4.5.0"></script>
   <script src="/js/composer.js?v=4.4.1"></script>
   <script src="/js/settings.js?v=4.4.1"></script>
-  <script src="/js/tools.js?v=4.4.1"></script>
-  <script src="/js/app.js?v=4.5.0"></script>
+  <script src="/js/tools.js?v=4.5.1"></script>
+  <script src="/js/app.js?v=4.5.1"></script>
 </body>
 </html>

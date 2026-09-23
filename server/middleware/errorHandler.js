@@ -8,25 +8,34 @@ function errorHandler(err, req, res, next) {
   const status = err.status || err.statusCode || 500;
   
   // Log masked error details on server
-  logger.error(`[${req.method}] ${req.url} failed with status ${status}:`, err.message || err);
+  const requestId = req.imageRequestId || req.requestId || null;
+  logger.error(`[${req.method}] ${req.url} failed with status ${status}${requestId ? ` [${requestId}]` : ''}:`, err?.stack || err?.message || err);
 
-  // Safe client response
+  // Safe client response. Image/provider failures are deliberately made
+  // diagnosable without ever returning tokens, stack traces, SQL, or secrets.
   let clientMessage = 'An unexpected server error occurred.';
 
   if (status < 500) {
     clientMessage = err.message || 'Bad Request';
-  } else if ((err.expose || err.provider === 'cloudflare') && err.message) {
+  } else if (err.code === 'DB_INIT_FAILED') {
+    clientMessage = 'Rockstar could not initialize its database connection. Please try again.';
+  } else if (err.provider === 'cloudflare' && err.message) {
+    clientMessage = err.message;
+  } else if (err.expose && err.message) {
     clientMessage = err.message;
   } else if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-    clientMessage = 'Could not connect to the Astra API gateway. Please check your internet connection or base URL.';
+    clientMessage = 'Could not reach a required backend service. Please try again.';
   } else if (err.code === 'ETIMEDOUT') {
-    clientMessage = 'Astra API request timed out. Please try again.';
+    clientMessage = 'A required backend service timed out. Please try again.';
+  } else if (String(req.path || '').startsWith('/api/tools/image/')) {
+    clientMessage = `Image generation failed inside the Rockstar backend${requestId ? ` (request ${requestId})` : ''}. Please try again.`;
   }
 
   res.status(status).json({
     error: {
       message: clientMessage,
-      status: status
+      status: status,
+      ...(requestId ? { requestId } : {})
     }
   });
 }

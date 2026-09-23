@@ -509,7 +509,11 @@
       const payload = img ? { image: img.dataUrl, prompt: userText, conversationId: activeConversationId } : { prompt: userText, conversationId: activeConversationId };
       const response = await fetch(endpoint, { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw Object.assign(new Error(data?.error?.message || 'Image generation failed.'), { status: response.status });
+      if (!response.ok) {
+        const serverMessage = data?.error?.message || 'Image generation failed.';
+        const requestSuffix = data?.error?.requestId ? ` (request ${data.error.requestId})` : '';
+        throw Object.assign(new Error(`${serverMessage}${requestSuffix}`), { status: response.status, requestId: data?.error?.requestId });
+      }
       const files = Array.isArray(data.images) ? data.images : [];
       if (!files.length) throw new Error('The image provider returned no image.');
       const markdown = files.map((f,i) => `![Rockstar AI generated image ${i+1}](${f.inlineUrl})`).join('\n\n') + '\n\n[Download image](' + files[0].downloadUrl + ')';

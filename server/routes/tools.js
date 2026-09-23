@@ -21,6 +21,8 @@ router.get('/status', requireAuth, async (req,res,next)=>{
       webSearch: Boolean(process.env.TAVILY_API_KEY),
       imageGeneration: Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN),
       imageEditing: Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN),
+      imageProvider: 'cloudflare-workers-ai',
+      imageModel: process.env.CLOUDFLARE_IMAGE_MODEL || '@cf/black-forest-labs/flux-2-klein-4b',
       codeExecution: envBool('ENABLE_CODE_EXECUTION', false) && Boolean(process.env.PISTON_BASE_URL || 'https://emkc.org/api/v2/piston'),
       docx: true, xlsx: true, pptx: true, pdf: true, voiceTts: Boolean(process.env.OPENAI_API_KEY), voiceTranscription: Boolean(process.env.OPENAI_API_KEY),
       sharing: Boolean(getPool()), jobs: Boolean(getPool()), audit: Boolean(getPool())

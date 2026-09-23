@@ -22,8 +22,17 @@ if (process.env.VERCEL) {
       await dbInitPromise;
       next();
     } catch (err) {
-      logger.error('Vercel database initialization failed:', err.message);
-      next(err);
+      // Never leave a rejected initialization promise cached in a warm Vercel
+      // function. A transient Supabase/network failure would otherwise make
+      // every later request fail with the same 500 until the function is recycled.
+      dbInitPromise = null;
+      logger.error(`[DB_INIT][${req.method} ${req.url}] Database initialization failed:`, err?.message || err);
+      const safe = Object.assign(new Error('Database initialization failed. Please try again.'), {
+        statusCode: 503,
+        expose: true,
+        code: 'DB_INIT_FAILED'
+      });
+      next(safe);
     }
   });
 }
