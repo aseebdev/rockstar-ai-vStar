@@ -483,8 +483,9 @@
   function looksLikeImageGeneration(text) {
     const q = String(text || '').trim();
     if (!q) return false;
-    return /\b(generate|create|draw|make|render|design|produce|show me)\b[\s\S]{0,140}\b(image|picture|photo|illustration|artwork|poster|wallpaper|logo|icon)\b/i.test(q)
-      || /\b(image|picture|photo|illustration|artwork|poster|wallpaper|logo|icon)\b[\s\S]{0,80}\b(of|for|showing)\b/i.test(q);
+    const imageNoun = '(?:image|images|picture|pictures|photo|photos|illustration|illustrations|artwork|artworks|poster|posters|wallpaper|wallpapers|logo|logos|icon|icons)';
+    return new RegExp('\\b(generate|create|draw|make|render|design|produce|show me|edit|modify)\\b[\\s\\S]{0,140}\\b' + imageNoun + '\\b', 'i').test(q)
+      || new RegExp('\\b' + imageNoun + '\\b[\\s\\S]{0,80}\\b(of|for|showing|now)\\b', 'i').test(q);
   }
 
   async function handleImageToolMessage(userText, attachments) {
