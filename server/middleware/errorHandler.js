@@ -15,6 +15,8 @@ function errorHandler(err, req, res, next) {
 
   if (status < 500) {
     clientMessage = err.message || 'Bad Request';
+  } else if (err.expose && err.message) {
+    clientMessage = err.message;
   } else if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
     clientMessage = 'Could not connect to the Astra API gateway. Please check your internet connection or base URL.';
   } else if (err.code === 'ETIMEDOUT') {

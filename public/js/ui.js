@@ -180,6 +180,44 @@ const UI = (function () {
     if (shouldScroll) scrollToBottom();
   }
 
+  function startImageGenerationMessage(messageId) {
+    toggleEmptyState(false);
+    const row = document.createElement('div');
+    row.className = 'message-row message-assistant image-generation-progress';
+    row.id = `msg-${messageId}`;
+    const avatar = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>';
+    const timeStr = formatTime(Date.now());
+    const settings = Storage.getSettings();
+    row.innerHTML = `
+      <div class="message-avatar" aria-hidden="true">${avatar}</div>
+      <div class="message-body">
+        <div class="message-header">
+          <span class="message-sender">Rockstar AI</span>
+          ${settings.showTimestamps ? `<span class="message-timestamp">${timeStr}</span>` : ''}
+        </div>
+        <div class="message-bubble image-generation-bubble" role="status" aria-live="polite">
+          <div class="image-generation-animation" aria-hidden="true">
+            <span class="image-generation-orb"></span>
+            <span class="image-generation-orb"></span>
+            <span class="image-generation-orb"></span>
+          </div>
+          <div class="image-generation-copy">
+            <strong>Creating your image</strong>
+            <span class="image-generation-dots"><i></i><i></i><i></i></span>
+            <small>Rockstar AI is generating this with Cloudflare Workers AI</small>
+          </div>
+        </div>
+      </div>
+    `;
+    messagesInnerEl.appendChild(row);
+    scrollToBottom(true);
+  }
+
+  function finishImageGenerationMessage(messageId) {
+    const row = document.getElementById(`msg-${messageId}`);
+    if (row) row.remove();
+  }
+
   function startStreamingAssistantMessage(messageId) {
     toggleEmptyState(false);
 
@@ -298,6 +336,8 @@ const UI = (function () {
     renderMessages,
     appendMessage,
     startStreamingAssistantMessage,
+    startImageGenerationMessage,
+    finishImageGenerationMessage,
     updateStreamingAssistantMessage,
     finishStreamingAssistantMessage,
     removeMessage,

@@ -499,7 +499,10 @@
     const userMsg = await Storage.addMessage({ conversationId: activeConversationId, role: 'user', content: userText });
     UI.appendMessage(userMsg, true);
     Composer.clear();
-    UI.showToast('Generating your image…', 'info', 2500);
+    const progressId = `image-progress-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    Composer.setGenerating(true);
+    UI.startImageGenerationMessage(progressId);
+    UI.showToast('Creating your image…', 'info', 2200);
     try {
       const img = attachments?.find(a => a.kind === 'image' && a.dataUrl);
       const endpoint = img ? '/api/tools/image/edit' : '/api/tools/image/generate';
@@ -510,16 +513,20 @@
       const files = Array.isArray(data.images) ? data.images : [];
       if (!files.length) throw new Error('The image provider returned no image.');
       const markdown = files.map((f,i) => `![Rockstar AI generated image ${i+1}](${f.inlineUrl})`).join('\n\n') + '\n\n[Download image](' + files[0].downloadUrl + ')';
+      UI.finishImageGenerationMessage(progressId);
       const assistant = await Storage.addMessage({ conversationId: activeConversationId, role:'assistant', content:markdown, model:'image-generation' });
       UI.appendMessage(assistant, true);
       await loadConversations();
     } catch (err) {
+      UI.finishImageGenerationMessage(progressId);
       const message = err?.status === 503
         ? 'Image generation is not connected yet. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment, then retry. Rockstar will never fake an image result.'
         : (err.message || 'Image generation failed.');
       const assistant = await Storage.addMessage({ conversationId: activeConversationId, role:'assistant', content:`**Image tool:** ${message}`, model:'tool-error' });
       UI.appendMessage(assistant, true);
-      UI.showToast(message, 'error', 6000);
+      UI.showToast(message, 'error', 8000);
+    } finally {
+      Composer.setGenerating(false);
     }
   }
 

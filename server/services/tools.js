@@ -26,7 +26,7 @@ async function cloudflareImage({ prompt, imageBuffer, imageMime = 'image/png', s
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const token = process.env.CLOUDFLARE_API_TOKEN;
   if (!accountId || !token) {
-    throw Object.assign(new Error('Image generation is not configured. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment.'), { statusCode: 503 });
+    throw Object.assign(new Error('Image generation is not configured. Add CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN to the server environment.'), { statusCode: 503, expose: true });
   }
 
   const model = process.env.CLOUDFLARE_IMAGE_MODEL || '@cf/black-forest-labs/flux-2-klein-4b';
@@ -37,29 +37,60 @@ async function cloudflareImage({ prompt, imageBuffer, imageMime = 'image/png', s
   const count = Math.min(Math.max(Number(n) || 1, 1), 1);
 
   const makeRequest = async () => {
-    const form = new FormData();
-    form.append('prompt', String(prompt || 'Create an image.').slice(0, 2048));
-    form.append('width', String(width));
-    form.append('height', String(height));
-    if (imageBuffer) {
-      if (imageBuffer.length > 8 * 1024 * 1024) {
-        throw Object.assign(new Error('Input image exceeds 8 MB.'), { statusCode: 413 });
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const form = new FormData();
+      form.append('prompt', String(prompt || 'Create an image.').slice(0, 2048));
+      form.append('width', String(width));
+      form.append('height', String(height));
+      if (imageBuffer) {
+        if (imageBuffer.length > 8 * 1024 * 1024) {
+          throw Object.assign(new Error('Input image exceeds 8 MB.'), { statusCode: 413, expose: true });
+        }
+        form.append('input_image_0', new Blob([imageBuffer], { type: imageMime || 'image/png' }), 'input.png');
       }
-      form.append('input_image_0', new Blob([imageBuffer], { type: imageMime || 'image/png' }), 'input.png');
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 90000);
+        let response;
+        try {
+          response = await fetch(`${base}/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: form,
+            signal: controller.signal
+          });
+        } finally { clearTimeout(timeout); }
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const detail = data?.errors?.map?.(e => e?.message).filter(Boolean).join('; ');
+          const message = detail || data?.error || `Cloudflare image provider failed (${response.status}).`;
+          const retryable = response.status === 429 || response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504;
+          lastError = Object.assign(new Error(`Cloudflare image provider: ${message}`), { statusCode: response.status, expose: true, retryable });
+          if (!retryable || attempt === 2) throw lastError;
+          await new Promise(resolve => setTimeout(resolve, 900 * (attempt + 1)));
+          continue;
+        }
+        const b64 = data?.result?.image;
+        if (!b64) throw Object.assign(new Error('Cloudflare image provider returned no image data.'), { statusCode: 502, expose: true });
+        return { b64, revisedPrompt: null };
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          lastError = Object.assign(new Error('Cloudflare image generation timed out after 90 seconds. Please try again.'), { statusCode: 504, expose: true, retryable: true });
+        } else if (err?.retryable) {
+          lastError = err;
+        } else if (err?.statusCode) {
+          throw err;
+        } else {
+          lastError = Object.assign(new Error(`Could not reach Cloudflare image provider: ${err?.message || 'network error'}`), { statusCode: 502, expose: true, retryable: true });
+        }
+        if (attempt === 2) throw lastError;
+        await new Promise(resolve => setTimeout(resolve, 900 * (attempt + 1)));
+      }
     }
-    const response = await fetch(`${base}/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = data?.errors?.map?.(e => e?.message).filter(Boolean).join('; ');
-      throw Object.assign(new Error(detail || data?.error || `Cloudflare image provider failed (${response.status}).`), { statusCode: response.status });
-    }
-    const b64 = data?.result?.image;
-    if (!b64) throw Object.assign(new Error('Cloudflare image provider returned no image.'), { statusCode: 502 });
-    return { b64, revisedPrompt: null };
+    throw lastError || Object.assign(new Error('Cloudflare image generation failed.'), { statusCode: 502, expose: true });
   };
 
   const images = [];
