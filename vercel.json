@@ -17,11 +17,5 @@
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/tools/jobs/worker",
-      "schedule": "* * * * *"
-    }
   ]
 }
