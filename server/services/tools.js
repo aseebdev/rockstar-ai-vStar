@@ -63,12 +63,18 @@ async function cloudflareImage({ prompt, imageBuffer, imageMime = 'image/png', s
           });
         } finally { clearTimeout(timeout); }
 
-        const data = await response.json().catch(() => ({}));
+        const rawBody = await response.text().catch(() => '');
+        let data = {};
+        try { data = rawBody ? JSON.parse(rawBody) : {}; } catch (_) {}
         if (!response.ok) {
-          const detail = data?.errors?.map?.(e => e?.message).filter(Boolean).join('; ');
-          const message = detail || data?.error || `Cloudflare image provider failed (${response.status}).`;
-          const retryable = response.status === 429 || response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504;
-          lastError = Object.assign(new Error(`Cloudflare image provider: ${message}`), { statusCode: response.status, expose: true, retryable });
+          const detail = Array.isArray(data?.errors)
+            ? data.errors.map(e => e?.message || e?.code).filter(Boolean).join('; ')
+            : '';
+          const message = detail || data?.error?.message || data?.error || data?.message || rawBody.slice(0, 500) || `Cloudflare image provider failed (HTTP ${response.status}).`;
+          // Cloudflare documents 429/408 and 5xx separately; avoid long blind retries on
+          // a persistent 500 while still retrying transient gateway/capacity responses.
+          const retryable = response.status === 429 || response.status === 502 || response.status === 503 || response.status === 504;
+          lastError = Object.assign(new Error(`Cloudflare image provider (HTTP ${response.status}): ${String(message).replace(/\s+/g, ' ').trim()}`), { statusCode: response.status, expose: true, retryable, provider: 'cloudflare' });
           if (!retryable || attempt === 2) throw lastError;
           await new Promise(resolve => setTimeout(resolve, 900 * (attempt + 1)));
           continue;
@@ -78,13 +84,13 @@ async function cloudflareImage({ prompt, imageBuffer, imageMime = 'image/png', s
         return { b64, revisedPrompt: null };
       } catch (err) {
         if (err?.name === 'AbortError') {
-          lastError = Object.assign(new Error('Cloudflare image generation timed out after 90 seconds. Please try again.'), { statusCode: 504, expose: true, retryable: true });
+          lastError = Object.assign(new Error('Cloudflare image generation timed out after 90 seconds. Please try again.'), { statusCode: 504, expose: true, retryable: true, provider: 'cloudflare' });
         } else if (err?.retryable) {
           lastError = err;
         } else if (err?.statusCode) {
           throw err;
         } else {
-          lastError = Object.assign(new Error(`Could not reach Cloudflare image provider: ${err?.message || 'network error'}`), { statusCode: 502, expose: true, retryable: true });
+          lastError = Object.assign(new Error(`Could not reach Cloudflare image provider: ${err?.message || 'network error'}`), { statusCode: 502, expose: true, retryable: true, provider: 'cloudflare' });
         }
         if (attempt === 2) throw lastError;
         await new Promise(resolve => setTimeout(resolve, 900 * (attempt + 1)));
