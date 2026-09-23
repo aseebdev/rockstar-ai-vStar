@@ -97,6 +97,9 @@ async function runTests() {
   assert(intent.classify('generate a donkey image', []) === 'image-generate', 'Explicit image generation routes to image tool');
   assert(intent.classify('create a logo for my company', []) === 'image-generate', 'Logo creation routes to image tool');
   assert(intent.classify('can you create images or not possible?', []) === 'text', 'Image capability question stays in text chat');
+  assert(intent.classify('you can possible to create images ? or not', []) === 'text', 'Informal image capability question stays in text chat');
+  assert(intent.classify('can you create an image?', []) === 'text', 'Bare image capability question stays in text chat');
+  assert(intent.classify('can you create an image of a cat?', []) === 'image-generate', 'Concrete image request still routes to image tool');
   assert(intent.classify('what images can you generate?', []) === 'text', 'Image capability question stays in text chat');
   assert(intent.classify('how do I generate an image?', []) === 'text', 'Instructional image question stays in text chat');
   assert(intent.classify('make this image brighter', [{kind:'image',dataUrl:'data:image/png;base64,AA=='}]) === 'image-edit', 'Attached image edit routes to image tool');

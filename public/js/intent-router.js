@@ -14,6 +14,14 @@
   const EDIT_VERB = /\b(?:edit|modify|change|alter|transform|remove|replace|add|erase|retouch|enhance|resize|crop|rotate|restore|brighten|brighter|darken|sharpen|blur|background)\b/i;
   const CAPABILITY = /\b(?:can|could|do|does|is|are|will|would)\b[\s\S]{0,80}\b(?:you|rockstar|this|it)\b[\s\S]{0,100}\b(?:generate|create|make|draw|edit|image|images|picture|pictures|photo|photos|logo|poster)\b|\b(?:how|what|which|when|where|why)\b[\s\S]{0,100}\b(?:generate|create|make|draw|edit|image generation|images)\b/i;
   const QUESTION_START = /^(?:can|could|do|does|is|are|will|would|how|what|which|when|where|why|tell me|explain|is it possible)\b/i;
+  // General capability language must stay in text chat. This intentionally
+  // handles informal grammar such as "you can possible to create images?"
+  // without treating a concrete request such as "create an image of a cat"
+  // as a capability question.
+  const GENERAL_CAPABILITY = /\b(?:possible|able|capable|available|supported|support(?:ed)?)\b[\s\S]{0,100}\b(?:create|generate|make|draw|edit)\b[\s\S]{0,100}\b(?:image|images|picture|pictures|photo|photos)\b|\b(?:create|generate|make|draw|edit)\b[\s\S]{0,80}\b(?:image|images|picture|pictures|photo|photos)\b[\s\S]{0,80}\b(?:possible|able|capable|available|supported)\b/i;
+  const BARE_CAPABILITY = /^(?:can|could)\s+(?:you|rockstar)\s+(?:create|generate|make|draw|edit)\s+(?:an?\s+)?(?:image|images|picture|pictures|photo|photos)\s*\??$/i;
+  const GENERAL_IMAGES_CAPABILITY = /\b(?:can|could|do|does|are|is)\b[\s\S]{0,80}\b(?:you|rockstar|it)\b[\s\S]{0,100}\b(?:images?|pictures?|photos?)\b[\s\S]{0,60}\b(?:now|at all|possible|available|supported|or not)\b/i;
+  const CONCRETE_VISUAL_TARGET = /\b(?:image|images|picture|pictures|photo|photos|illustration|illustrations|artwork|poster|wallpaper|logo|icon|avatar|thumbnail|diagram|drawing|graphic)\b[\s\S]{0,40}\b(?:of|showing|depicting|featuring)\b/i;
 
   function normalize(text) {
     return String(text || '').replace(/\s+/g, ' ').trim();
@@ -22,8 +30,15 @@
   function isCapabilityQuestion(q) {
     if (!q) return false;
     const lower = q.toLowerCase();
-    if (!/[?]$/.test(q) && !QUESTION_START.test(q)) return false;
+    if (!/[?]$/.test(q) && !QUESTION_START.test(q) && !GENERAL_CAPABILITY.test(q)) return false;
     if (!IMAGE_NOUN.test(q) && !/image\s+generation|image\s+tool|visual\s+generation/i.test(q)) return false;
+
+    // A concrete target such as "an image of a cat" is a real generation
+    // request, even when phrased as "can you create...".
+    if (CONCRETE_VISUAL_TARGET.test(q)) return false;
+
+    // General capability questions should never invoke the image tool.
+    if (GENERAL_CAPABILITY.test(q) || BARE_CAPABILITY.test(q) || GENERAL_IMAGES_CAPABILITY.test(q)) return true;
     if (/\b(?:not possible|possible|available|supported|can you|could you|do you|does it|what can you|how can i|how do i|what images can you)\b/i.test(lower)) return true;
     return CAPABILITY.test(q);
   }
