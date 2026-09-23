@@ -516,7 +516,8 @@
       }
       const files = Array.isArray(data.images) ? data.images : [];
       if (!files.length) throw new Error('The image provider returned no image.');
-      const markdown = files.map((f,i) => `![Rockstar AI generated image ${i+1}](${f.inlineUrl})`).join('\n\n') + '\n\n[Download image](' + files[0].downloadUrl + ')';
+      const downloadLinks = files.map((f,i) => `[Download image${files.length > 1 ? ` ${i+1}` : ''}](${f.downloadUrl})`).join('\n');
+      const markdown = files.map((f,i) => `![Rockstar AI generated image ${i+1}](${f.inlineUrl})`).join('\n\n') + '\n\n' + downloadLinks;
       UI.finishImageGenerationMessage(progressId);
       const assistant = await Storage.addMessage({ conversationId: activeConversationId, role:'assistant', content:markdown, model:'image-generation' });
       UI.appendMessage(assistant, true);

@@ -73,6 +73,9 @@ function securityHeaders(req, res, next) {
 
   // Keep this compatible with the existing UI while blocking the dangerous classes
   // of browser resource loading that are not needed by Rockstar AI.
+  // Do NOT add 'unsafe-eval': the application contains no eval()/new Function()
+  // usage, and enabling it would weaken the XSS defense just to silence browser
+  // warnings caused by a blocked string-evaluation attempt.
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self';"

@@ -1185,6 +1185,16 @@ dialog#tools-dialog.glass-dialog {
 .message-generated-media .media-actions { display:flex; flex-wrap:wrap; gap:8px; }
 .message-generated-media a { display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
 
+.message-generated-media-download { display:flex; flex-wrap:wrap; }
+.message-generated-media .generated-image-download-btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:38px; padding:9px 14px; border:1px solid var(--border-glass);
+  border-radius:10px; background:var(--surface-glass); color:var(--text-primary);
+  font-size:13px; font-weight:700; cursor:pointer; transition:transform .16s ease, background .16s ease, border-color .16s ease;
+}
+.message-generated-media .generated-image-download-btn:hover { transform:translateY(-1px); background:var(--surface-glass-hover, var(--surface-glass)); }
+.message-generated-media .generated-image-download-btn:active { transform:translateY(0); }
+
 /* Persistent image-generation progress UI */
 .image-generation-bubble { display:flex; align-items:center; gap:14px; min-height:72px; overflow:hidden; }
 .image-generation-animation { position:relative; width:48px; height:48px; flex:0 0 48px; display:grid; place-items:center; }

@@ -154,13 +154,20 @@ const MarkdownRenderer = (function () {
       '<div class="message-generated-media"><img src="$2" alt="$1" loading="lazy"></div>'
     );
 
-    // 9. Links ([text](url)) - with safe target="_blank"
+    // 9. Generated-file download links. Only Rockstar's authenticated file route
+    // is converted to a real download button; arbitrary relative URLs are not allowed.
+    processed = processed.replace(
+      /\[([^\]]+)\]\((\/api\/tools\/files\/[A-Za-z0-9_-]+)\)/g,
+      '<span class="message-generated-media-download"><a class="generated-image-download-btn" href="$2" download title="Download generated image" aria-label="Download generated image"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg><span>$1</span></a></span>'
+    );
+
+    // 10. External links ([text](https://...)) - with safe target="_blank"
     processed = processed.replace(
       /\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)/g,
       '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
     );
 
-    // 9. Unordered Lists (* or -)
+    // 11. Unordered Lists (* or -)
     processed = processed.replace(/^\s*[\-\*]\s+(.*$)/gim, '<li>$1</li>');
     processed = processed.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
     processed = processed.replace(/<\/ul>\s*<ul>/g, '');
