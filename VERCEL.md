@@ -17,3 +17,9 @@ For local development:
 npm install
 npm start
 ```
+
+## Important for v4.6.2
+
+The app does not require a global server-side Astra key. Each authenticated user stores their own Astra key encrypted in PostgreSQL. The gateway is OpenAI-compatible at `https://api.experientiallabs.ai/v1`; `/v1/models` and `/v1/chat/completions` use the user's Bearer key. The app intentionally leaves `ASTRA_MODEL` blank by default so the Settings model picker uses the models actually available to that user's key.
+
+If a deployment returns HTTP 503 from `/api/models` or `/api/chat`, check the Vercel function logs first for `DB_INIT_FAILED`. Database initialization is now scoped to database-backed routes so `/api/health` remains usable even when the database is unavailable.

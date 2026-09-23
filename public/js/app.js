@@ -465,7 +465,7 @@
     const hasKey = Auth.hasAstraKey();
     if (requested === 'offline') return { id: 'offline', cloud: false, model: 'rockstar-core' };
     if (requested === 'local') return { id: 'offline', cloud: false, model: 'rockstar-core', note: 'Local AI is not configured.' };
-    if (hasKey) return { id: 'cloud', cloud: true, model: settings.selectedModel || 'gpt-5.6-luna' };
+    if (hasKey) return { id: 'cloud', cloud: true, model: settings.selectedModel || '' };
     return { id: 'offline', cloud: false, model: 'rockstar-core' };
   }
 

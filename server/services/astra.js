@@ -10,9 +10,9 @@ const logger = require('../utils/logger');
  * timeouts, retries, and error translation are contained exclusively within this file.
  * 
  * Configurable via environment variables:
- * - ASTRA_API_KEY: Authentication key / token (required)
- * - ASTRA_BASE_URL: Gateway base URL (default: https://api.astra-api.com/v1)
- * - ASTRA_MODEL: Default model identifier (default: gpt-4o-mini)
+ * - Per-user Astra keys are loaded server-side from the encrypted database.
+ * - ASTRA_BASE_URL: Gateway base URL (default: https://api.experientiallabs.ai/v1)
+ * - ASTRA_MODEL: Optional default model identifier. When blank, the user's first accessible model is selected by the UI.
  * - ASTRA_SYSTEM_PROMPT: Default system persona
  * - ASTRA_TIMEOUT_MS: Request timeout in milliseconds (default: 30000)
  */
@@ -69,20 +69,6 @@ class AstraService {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream, application/json'
     };
-
-    // Support optional custom headers (e.g. astra-api-token if required by certain Astra endpoints)
-    if (process.env.ASTRA_API_TOKEN) {
-      headers['astra-api-token'] = process.env.ASTRA_API_TOKEN.trim();
-    }
-
-    if (process.env.ASTRA_CUSTOM_HEADERS) {
-      try {
-        const custom = JSON.parse(process.env.ASTRA_CUSTOM_HEADERS);
-        Object.assign(headers, custom);
-      } catch (e) {
-        logger.warn('Could not parse ASTRA_CUSTOM_HEADERS JSON:', e.message);
-      }
-    }
 
     return headers;
   }
@@ -346,13 +332,13 @@ class AstraService {
       }
 
       const json = await response.json().catch(() => ({}));
-      let discovered = Array.isArray(json.data)
-        ? json.data.filter(m => typeof m.id === 'string').map(m => ({
+      const catalog = Array.isArray(json.data) ? json.data : (Array.isArray(json.models) ? json.models : []);
+      let discovered = catalog
+        .filter(m => typeof m.id === 'string').map(m => ({
             id: m.id,
             name: m.id,
             description: m.owned_by ? `Provider: ${m.owned_by}` : 'Astra model'
-          }))
-        : [];
+          }));
 
       return {
         supported: true,
@@ -380,7 +366,7 @@ class AstraService {
    * - Cancellation: hooks into signal to abort immediately
    * - Error normalization: extracts clear error messages
    */
-  async streamChatCompletion({ apiKey, messages, model, temperature, systemPrompt, signal, onChunk, onDone, onError }) {
+  async streamChatCompletion({ apiKey, messages, model, temperature, systemPrompt, safetyIdentifier, signal, onChunk, onDone, onError }) {
     this.reloadConfig();
 
     if (!this.isConfigured(apiKey)) {
@@ -422,6 +408,7 @@ class AstraService {
     // Only send temperature when explicitly supplied by the client. This keeps
     // the default request compatible with providers/models that do not support it.
     if (typeof temperature === 'number') payload.temperature = temperature;
+    if (safetyIdentifier) payload.safety_identifier = String(safetyIdentifier);
 
     logger.info(`Sending chat request to Astra: model="${selectedModel}", messagesCount=${finalMessages.length}`);
 

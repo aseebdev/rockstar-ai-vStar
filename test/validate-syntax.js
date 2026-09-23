@@ -81,7 +81,8 @@ const requiredFiles = [
   'public/js/settings.js',
   'public/js/app.js',
   'public/js/auth.js',
-  'public/js/login-experience.js'
+  'public/js/login-experience.js',
+  'public/js/share.js'
 ];
 
 requiredFiles.forEach(relPath => checkFileExists(path.join(rootDir, relPath)));
@@ -113,7 +114,8 @@ const jsFiles = [
   'public/js/settings.js',
   'public/js/app.js',
   'public/js/auth.js',
-  'public/js/login-experience.js'
+  'public/js/login-experience.js',
+  'public/js/share.js'
 ];
 
 jsFiles.forEach(relPath => checkJsSyntax(path.join(rootDir, relPath)));

@@ -10,7 +10,7 @@ const AstraClient = (function () {
    * Response: { ok: true, apiConfigured: boolean, model: string, baseUrl: string }
    */
   async function getHealth() {
-    const res = await fetch('/api/health');
+    const res = await fetch('/api/health', { credentials: 'include', cache: 'no-store' });
     if (!res.ok) throw new Error(`Health check failed with HTTP ${res.status}`);
     return await res.json();
   }
@@ -20,7 +20,7 @@ const AstraClient = (function () {
    * Response: { supported: boolean, currentModel: string, models: Array }
    */
   async function getModels() {
-    const res = await fetch('/api/models', { credentials: 'include' });
+    const res = await fetch('/api/models', { credentials: 'include', cache: 'no-store' });
     if (!res.ok) throw new Error(`Failed to load models with HTTP ${res.status}`);
     return await res.json();
   }

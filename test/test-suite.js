@@ -82,7 +82,7 @@ async function runTests() {
   assert(typeof status.modelConfigured === 'boolean', 'Adapter reports modelConfigured boolean');
 
   const errText = astraService.formatApiError(401, { message: 'Invalid token' });
-  assert(errText.includes('401') && errText.includes('ASTRA_API_KEY'), 'Formats 401 error with helpful guidance');
+  assert(errText.includes('401') && errText.includes('API key'), 'Formats 401 error with helpful guidance');
 
 
   // 4b. Intent Router Tests
@@ -162,20 +162,15 @@ async function runTests() {
     assert(healthRes.headers['x-frame-options'] === 'DENY', 'X-Frame-Options: DENY header present');
     assert(Boolean(healthRes.headers['content-security-policy']), 'Content-Security-Policy header present');
 
-    // Test GET /api/test-connection
+    // Protected provider routes must reject unauthenticated callers rather than failing with a generic 503.
     const testConnRes = await makeRequest('/api/test-connection');
-    assert(testConnRes.status === 200, 'GET /api/test-connection returns 200 OK');
-    assert(typeof testConnRes.body.ok === 'boolean', 'Test connection body returns boolean ok status');
+    assert(testConnRes.status === 401, 'GET /api/test-connection requires authentication');
 
-    // Test POST /api/test-connection
-    const postTestConnRes = await makeRequest('/api/test-connection', { method: 'POST' });
-    assert(postTestConnRes.status === 200, 'POST /api/test-connection returns 200 OK');
+    const postTestConnRes = await makeRequest('/api/test-connection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: {} });
+    assert(postTestConnRes.status === 401, 'POST /api/test-connection requires authentication');
 
-    // Test GET /api/models
     const modelsRes = await makeRequest('/api/models');
-    assert(modelsRes.status === 200, 'GET /api/models returns 200 OK');
-    assert(Array.isArray(modelsRes.body.models), 'Models response contains models array');
-    assert(typeof modelsRes.body.currentModel === 'string', 'Models response identifies current model');
+    assert(modelsRes.status === 401, 'GET /api/models requires authentication');
     assert(!JSON.stringify(modelsRes.body).match(/sk-[A-Za-z0-9_-]{8,}/), 'Models response contains no API-key-like secret');
 
     // Test POST /api/chat with empty body
@@ -184,7 +179,12 @@ async function runTests() {
       headers: { 'Content-Type': 'application/json' },
       body: {}
     });
-    assert(badChatRes.status === 400, 'POST /api/chat with invalid payload returns 400 Bad Request');
+    assert(badChatRes.status === 401, 'POST /api/chat requires authentication before payload processing');
+
+
+    const apiSource = require('fs').readFileSync(path.join(__dirname, '../server/routes/api.js'), 'utf8');
+    assert(apiSource.includes('messages: boundedMessages'), 'Chat route forwards boundedMessages using the correct service argument');
+    assert(!apiSource.includes('\n      boundedMessages,\n'), 'Chat route no longer passes the undefined service parameter name');
 
     // Test static file serving: GET /
     const rootRes = await makeRequest('/');

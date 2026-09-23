@@ -35,7 +35,7 @@ Copy `.env.example` to `.env` and configure:
 
 ```env
 ASTRA_BASE_URL=https://api.experientiallabs.ai/v1
-ASTRA_MODEL=gpt-5.6-luna
+ASTRA_MODEL=
 DATABASE_URL=postgresql://...
 SESSION_SECRET=use-a-long-random-secret
 OWNER_EMAIL=your-email@example.com

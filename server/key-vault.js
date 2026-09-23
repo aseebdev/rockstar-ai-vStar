@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 
-const SECRET = String(process.env.SESSION_SECRET || '');
+const SECRET = String(process.env.ASTRA_KEY_ENCRYPTION_SECRET || process.env.SESSION_SECRET || '');
 
 function encryptionKey() {
   if (SECRET.length < 32) throw new Error('SESSION_SECRET must be configured with at least 32 characters.');

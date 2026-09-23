@@ -80,7 +80,7 @@ const Storage = (function () {
     autoScroll: true,
     showTimestamps: true,
     systemPrompt: '',
-    selectedModel: 'gpt-5.6-luna',
+    selectedModel: '',
     sidebarCollapsed: false,
     aiMode: 'automatic',
     voiceLanguage: 'en-US'
@@ -157,7 +157,7 @@ const Storage = (function () {
     });
   }
 
-  async function createConversation(title = 'New Conversation', model = 'gpt-5.6-luna') {
+  async function createConversation(title = 'New Conversation', model = '') {
     await init();
     const id = 'conv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     const conversation = {

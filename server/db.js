@@ -6,9 +6,15 @@ const pool = process.env.DATABASE_URL
   ? new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
-      max: 5
+      max: 5,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000
     })
   : null;
+
+if (pool) {
+  pool.on('error', (err) => logger.error('PostgreSQL pool error:', err));
+}
 
 async function initDb() {
   if (!pool) {

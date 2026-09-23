@@ -15,26 +15,20 @@ const logger = require('./utils/logger');
 const app = express();
 
 let dbInitPromise = null;
-if (process.env.VERCEL) {
-  app.use(async (req, res, next) => {
-    try {
-      if (!dbInitPromise) dbInitPromise = initDb();
-      await dbInitPromise;
-      next();
-    } catch (err) {
-      // Never leave a rejected initialization promise cached in a warm Vercel
-      // function. A transient Supabase/network failure would otherwise make
-      // every later request fail with the same 500 until the function is recycled.
+async function ensureDb(req, res, next) {
+  try {
+    if (!dbInitPromise) dbInitPromise = initDb();
+    const ready = await dbInitPromise;
+    if (!ready) {
       dbInitPromise = null;
-      logger.error(`[DB_INIT][${req.method} ${req.url}] Database initialization failed:`, err?.message || err);
-      const safe = Object.assign(new Error('Database initialization failed. Please try again.'), {
-        statusCode: 503,
-        expose: true,
-        code: 'DB_INIT_FAILED'
-      });
-      next(safe);
+      return res.status(503).json({ error: { message: 'Database is not configured. Add DATABASE_URL to the production environment.' } });
     }
-  });
+    next();
+  } catch (err) {
+    dbInitPromise = null;
+    logger.error(`[DB_INIT][${req.method} ${req.url}] Database initialization failed:`, err?.message || err);
+    return res.status(503).json({ error: { message: 'Rockstar could not initialize its database connection. Please verify DATABASE_URL and try again.', code: 'DB_INIT_FAILED' } });
+  }
 }
 
 if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
@@ -73,14 +67,13 @@ app.get('/rraudio.mp3', (req, res, next) => {
   });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/data', dataRoutes);
-app.use('/api/tools', toolsRoutes);
-app.use('/api', apiRoutes);
+app.use('/api/auth', ensureDb, authRoutes);
+app.use('/api/data', ensureDb, dataRoutes);
+app.use('/api/tools', ensureDb, toolsRoutes);
+app.use('/api', ensureDb, apiRoutes);
 
 app.get('/share/:token', (req, res) => {
-  const token = String(req.params.token).replace(/[^A-Za-z0-9_-]/g, '');
-  res.type('html').send(`<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Rockstar AI • Shared conversation</title><style>body{font-family:system-ui,sans-serif;background:#080b12;color:#eef2ff;margin:0;padding:32px}main{max-width:900px;margin:auto}.card{background:#111827;border:1px solid #263148;border-radius:18px;padding:24px;margin:18px 0}pre{white-space:pre-wrap;word-break:break-word}h1{font-size:28px}</style></head><body><main id=\"app\"><div class=\"card\">Loading secure conversation…</div></main><script>const token=${JSON.stringify(token)};fetch('/api/tools/share/'+token).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d?.error?.message||'Share unavailable');document.title='Rockstar AI • '+d.conversation.title;document.getElementById('app').innerHTML='<h1>'+esc(d.conversation.title)+'</h1>'+d.conversation.messages.map(m=>'<section class=\"card\"><strong>'+esc(m.role)+'</strong><pre>'+esc(m.content)+'</pre></section>').join('')}).catch(e=>document.getElementById('app').innerHTML='<div class=\"card\"><h1>Share unavailable</h1><p>'+esc(e.message)+'</p></div>');function esc(s){return String(s??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}</script></body></html>`);
+  res.type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rockstar AI • Shared conversation</title><link rel="stylesheet" href="/css/share.css?v=4.6.2"></head><body><main id="app"><div class="card">Loading secure conversation…</div></main><script src="/js/share.js?v=4.6.2" defer></script></body></html>`);
 });
 
 app.get('*', (req, res, next) => {

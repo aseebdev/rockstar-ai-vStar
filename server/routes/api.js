@@ -73,9 +73,10 @@ router.get('/health', (req, res) => {
   res.json({
     ...status,
     brand: 'Rockstar AI',
-    appVersion: '4.6.1',
+    appVersion: '4.6.2',
     authenticationRequired: true,
     ownAstraKeyRequired: true,
+    databaseConfigured: Boolean(process.env.DATABASE_URL),
     dailyMessageLimit: parseInt(process.env.DAILY_MESSAGE_LIMIT, 10) || 20,
     monthlyMessageLimit: parseInt(process.env.MONTHLY_MESSAGE_LIMIT, 10) || 500
   });
@@ -234,7 +235,7 @@ router.post('/chat',
     let upstreamFinished = false;
 
     const abortUpstream = () => {
-      if (!res.writableEnded && !controller.signal.aborted) {
+      if (!upstreamFinished && !res.writableEnded && !controller.signal.aborted) {
         logger.info('Client disconnected; aborting upstream stream.');
         controller.abort();
       }
@@ -244,10 +245,11 @@ router.post('/chat',
 
     await astraService.streamChatCompletion({
       apiKey,
-      boundedMessages,
+      messages: boundedMessages,
       model,
       temperature,
       systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${ROCKSTAR_RUNTIME_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
+      safetyIdentifier: req.user.sub,
       signal: controller.signal,
       onChunk: (delta) => {
         if (!res.writableEnded) {
@@ -292,10 +294,11 @@ router.post('/chat',
 
       await astraService.streamChatCompletion({
         apiKey,
-        boundedMessages,
+        messages: boundedMessages,
         model,
         temperature,
         systemPrompt: `${ROCKSTAR_CREATOR_CONTEXT}\n\n${ROCKSTAR_RUNTIME_CONTEXT}\n\n${systemPrompt || ''}`.trim(),
+        safetyIdentifier: req.user.sub,
         signal: controller.signal,
         onChunk: (delta) => { fullText += delta; },
         onDone: ({ fullText: text, model: rModel, aborted }) => {
