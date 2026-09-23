@@ -205,7 +205,7 @@ const UI = (function () {
           <div class="image-generation-copy">
             <strong>Creating your image</strong>
             <span class="image-generation-dots"><i></i><i></i><i></i></span>
-            <small>Rockstar AI is generating this with Cloudflare Workers AI</small>
+            <small>Rockstar AI is working on your image with Cloudflare Workers AI</small>
           </div>
         </div>
       </div>

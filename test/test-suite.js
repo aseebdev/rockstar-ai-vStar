@@ -84,6 +84,25 @@ async function runTests() {
   const errText = astraService.formatApiError(401, { message: 'Invalid token' });
   assert(errText.includes('401') && errText.includes('ASTRA_API_KEY'), 'Formats 401 error with helpful guidance');
 
+
+  // 4b. Intent Router Tests
+  console.log('\n4b. Testing multimodal intent routing:');
+  const fs = require('fs');
+  const vm = require('vm');
+  const routerCode = fs.readFileSync(path.join(__dirname, '../public/js/intent-router.js'), 'utf8');
+  const routerContext = { window: {} };
+  vm.createContext(routerContext);
+  vm.runInContext(routerCode, routerContext);
+  const intent = routerContext.window.RockstarIntent;
+  assert(intent.classify('generate a donkey image', []) === 'image-generate', 'Explicit image generation routes to image tool');
+  assert(intent.classify('create a logo for my company', []) === 'image-generate', 'Logo creation routes to image tool');
+  assert(intent.classify('can you create images or not possible?', []) === 'text', 'Image capability question stays in text chat');
+  assert(intent.classify('what images can you generate?', []) === 'text', 'Image capability question stays in text chat');
+  assert(intent.classify('how do I generate an image?', []) === 'text', 'Instructional image question stays in text chat');
+  assert(intent.classify('make this image brighter', [{kind:'image',dataUrl:'data:image/png;base64,AA=='}]) === 'image-edit', 'Attached image edit routes to image tool');
+  assert(intent.classify('learn me javascript', []) === 'text', 'Normal learning prompt stays in text chat');
+  assert(intent.classify('draw a cat', []) === 'image-generate', 'Explicit visual drawing request routes to image tool');
+
   // 5. Live Server Endpoint Tests
   console.log('\n5. Testing Live Server Routes:');
   const express = require('express');

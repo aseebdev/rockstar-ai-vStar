@@ -203,6 +203,7 @@ const RockstarCore = (() => {
     if (/who (created|made|built)|who is aseebdev|who is abdul aseeb|creator|developer of rockstar|who owns rockstar/.test(q)) return creatorAnswer();
     if (/linkedin|linked in|aseebdev profile/.test(q)) return `Aseebdev's LinkedIn profile: https://www.linkedin.com/in/aseebdev/`;
     if (/which mode|what mode|current mode|mode.*now|which ai|what ai.*using|are you offline|offline mode/.test(q)) return modeAnswer();
+    if (/(can you|could you|do you|is it|are you|what can you|how can i|how do i|what images can you).*(generate|create|make|draw|edit|image|images|picture|photo)/.test(q) || /(image generation|image tool).*(possible|available|supported)/.test(q)) return `Yes — **Rockstar AI can generate and edit images** using its connected image-generation tool.\n\nWhen you explicitly ask me to **generate/create/draw an image**, Rockstar routes that request to the image tool. Normal questions about images stay in the regular text conversation.`;
     if (/api key|astra key|add.*key|without.*key|no.*key|remove.*key|key.*removed/.test(q)) return keyAnswer();
     if (/what is rockstar|rockstar ai|how does rockstar work|about this (site|website|app)/.test(q)) return appAnswer();
 

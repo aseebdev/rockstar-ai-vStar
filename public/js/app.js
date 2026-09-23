@@ -480,24 +480,22 @@
     return { messages: result.slice(-maxMessages), compacted: true };
   }
 
-  function looksLikeImageGeneration(text) {
-    const q = String(text || '').trim();
-    if (!q) return false;
-    const imageNoun = '(?:image|images|picture|pictures|photo|photos|illustration|illustrations|artwork|artworks|poster|posters|wallpaper|wallpapers|logo|logos|icon|icons)';
-    return new RegExp('\\b(generate|create|draw|make|render|design|produce|show me|edit|modify)\\b[\\s\\S]{0,140}\\b' + imageNoun + '\\b', 'i').test(q)
-      || new RegExp('\\b' + imageNoun + '\\b[\\s\\S]{0,80}\\b(of|for|showing|now)\\b', 'i').test(q);
+  function classifyUserIntent(text, attachments) {
+    return window.RockstarIntent?.classify(text, attachments) || 'text';
   }
 
-  async function handleImageToolMessage(userText, attachments) {
+  async function handleImageToolMessage(userText, attachments, options = {}) {
     const title = String(userText || 'Generated image').trim().slice(0, 35) || 'Generated image';
     if (!activeConversationId) {
-      const conv = await Storage.createConversation(title, 'image-generation');
+      const conv = await Storage.createConversation(title, Storage.getSettings().selectedModel || 'gpt-5.6-luna');
       activeConversationId = conv.id;
       if (mobileTitle) mobileTitle.textContent = title;
       await loadConversations();
     }
-    const userMsg = await Storage.addMessage({ conversationId: activeConversationId, role: 'user', content: userText });
-    UI.appendMessage(userMsg, true);
+    if (!options.skipUserMessage) {
+      const userMsg = await Storage.addMessage({ conversationId: activeConversationId, role: 'user', content: userText });
+      UI.appendMessage(userMsg, true);
+    }
     Composer.clear();
     const progressId = `image-progress-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
     Composer.setGenerating(true);
@@ -539,7 +537,8 @@
 
     // Tool-first routing: image requests are handled by the real image provider,
     // not sent to the text model where it could incorrectly claim no image tool exists.
-    if (looksLikeImageGeneration(userText)) {
+    const intent = classifyUserIntent(userText, attachments);
+    if (intent === 'image-generate' || intent === 'image-edit') {
       await handleImageToolMessage(userText, attachments);
       return;
     }
@@ -618,6 +617,7 @@
       model: settings.selectedModel,
       systemPrompt: [
         `RUNTIME MODE: VERIFIED ASTRA CLOUD MODE. The application verified the user's Astra key and selected model before this request. If asked which mode is active, state the selected Astra model. Never call this offline or Rockstar Core.`,
+        `CAPABILITIES: Rockstar AI has a separate image-generation tool backed by Cloudflare Workers AI. If the user asks whether Rockstar can generate or edit images, answer that it can. Do not claim that image generation is unavailable. The application only invokes the image tool for an explicit visual-generation/edit request; capability questions remain normal text conversation.`,
         settings.systemPrompt
       ].filter(Boolean).join('\n\n'),
       onChunk: (delta) => {
@@ -687,6 +687,7 @@
     const messages = await Storage.getMessages(activeConversationId);
     const targetIdx = messages.findIndex(m => m.id === msgId);
     if (targetIdx === -1) return;
+    const targetMsg = messages[targetIdx];
 
     // Delete this assistant message and any subsequent messages
     await Storage.deleteMessagesAfter(activeConversationId, msgId);
@@ -694,6 +695,16 @@
 
     const remaining = await Storage.getMessages(activeConversationId);
     UI.renderMessages(remaining);
+
+    // Image-generation results are tool results, so regenerate them with the image tool
+    // instead of sending the image markdown back through the text model.
+    if (targetMsg.model === 'image-generation') {
+      const lastUserMsg = remaining.filter(m => m.role === 'user').pop();
+      if (lastUserMsg) {
+        await handleImageToolMessage(lastUserMsg.content, [], { skipUserMessage: true });
+      }
+      return;
+    }
 
     // Find the preceding user message to re-trigger
     const lastUserMsg = remaining.filter(m => m.role === 'user').pop();
@@ -720,6 +731,7 @@
         model: settings.selectedModel,
         systemPrompt: [
         `RUNTIME MODE: VERIFIED ASTRA CLOUD MODE. The application verified the user's Astra key and selected model before this request. If asked which mode is active, state the selected Astra model. Never call this offline or Rockstar Core.`,
+        `CAPABILITIES: Rockstar AI has a separate image-generation tool backed by Cloudflare Workers AI. If the user asks whether Rockstar can generate or edit images, answer that it can. Do not claim that image generation is unavailable. The application only invokes the image tool for an explicit visual-generation/edit request; capability questions remain normal text conversation.`,
         settings.systemPrompt
       ].filter(Boolean).join('\n\n'),
         onChunk: (delta) => {
