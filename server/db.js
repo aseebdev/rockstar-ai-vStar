@@ -71,6 +71,14 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       expires_at TIMESTAMPTZ
     );
+    -- Backward-compatible migrations for generated_files created by older builds.
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS conversation_id TEXT REFERENCES conversations(id) ON DELETE SET NULL;
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS filename TEXT;
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS mime_type TEXT;
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS size_bytes INTEGER;
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS data BYTEA;
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    ALTER TABLE generated_files ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ;
     CREATE INDEX IF NOT EXISTS generated_files_user_created_idx ON generated_files(user_id, created_at DESC);
 
     CREATE TABLE IF NOT EXISTS shares (

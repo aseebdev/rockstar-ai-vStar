@@ -73,7 +73,7 @@ router.get('/health', (req, res) => {
   res.json({
     ...status,
     brand: 'Rockstar AI',
-    appVersion: '4.5.1',
+    appVersion: '4.5.2',
     authenticationRequired: true,
     ownAstraKeyRequired: true,
     dailyMessageLimit: parseInt(process.env.DAILY_MESSAGE_LIMIT, 10) || 20,

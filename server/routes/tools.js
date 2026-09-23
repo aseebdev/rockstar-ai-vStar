@@ -37,26 +37,62 @@ router.post('/web-search', rateLimit({windowMs:60000,max:20,keyFn:req=>req.user?
 
 async function persistGeneratedImages(req, images, conversationId = null) {
   const p = getPool();
-  if (!p) throw Object.assign(new Error('Database is not configured; generated images cannot be stored.'), { statusCode: 503 });
+  if (!p) throw Object.assign(new Error('Database is not configured; generated images cannot be stored.'), { statusCode: 503, expose: true, code: 'DB_NOT_CONFIGURED' });
+
+  // A client-side conversation can briefly exist before it is persisted to the
+  // database. Never let that foreign-key race destroy an otherwise successful
+  // image generation. Store the image with a NULL conversation_id in that case.
+  let safeConversationId = conversationId ? String(conversationId) : null;
+  if (safeConversationId) {
+    try {
+      const check = await p.query('SELECT id FROM conversations WHERE id=$1 AND user_id=$2 LIMIT 1', [safeConversationId, req.user.sub]);
+      if (!check.rowCount) safeConversationId = null;
+    } catch (checkError) {
+      logger.warn(`[IMAGE][${req.imageRequestId || 'unknown'}] Conversation validation failed; storing image without conversation link: ${checkError?.message || checkError}`);
+      safeConversationId = null;
+    }
+  }
+
   const files = [];
   for (let i = 0; i < images.length; i++) {
     const b64 = images[i]?.b64;
     if (!b64) continue;
     const buffer = Buffer.from(b64, 'base64');
-    if (buffer.length > 12 * 1024 * 1024) throw Object.assign(new Error('Generated image exceeds 12 MB.'), { statusCode: 413 });
+    if (!buffer.length) throw Object.assign(new Error('Cloudflare returned an empty image.'), { statusCode: 502, expose: true, code: 'IMAGE_EMPTY' });
+    if (buffer.length > 12 * 1024 * 1024) throw Object.assign(new Error('Generated image exceeds 12 MB.'), { statusCode: 413, expose: true, code: 'IMAGE_TOO_LARGE' });
+
     const id = newId();
     const filename = `rockstar-${Date.now()}-${i + 1}.png`;
+    const values = [id, req.user.sub, safeConversationId, filename, 'image/png', buffer.length, buffer, new Date(Date.now() + 7 * 86400000)];
     try {
       await p.query(
         'INSERT INTO generated_files (id,user_id,conversation_id,filename,mime_type,size_bytes,data,expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-        [id, req.user.sub, conversationId, filename, 'image/png', buffer.length, buffer, new Date(Date.now() + 7 * 86400000)]
+        values
       );
     } catch (dbError) {
-      logger.error(`[IMAGE][${req.imageRequestId || 'unknown'}] Failed to persist generated image:`, dbError);
-      throw Object.assign(new Error('The image was generated, but Rockstar could not save it. Please try again.'), { statusCode: 503, expose: true, code: 'IMAGE_PERSIST_FAILED' });
+      // If an older database schema or a conversation FK is the problem, retry
+      // once without the optional conversation link. The generated image itself
+      // must not be lost merely because conversation metadata is unavailable.
+      const message = String(dbError?.message || dbError || 'database error');
+      logger.error(`[IMAGE][${req.imageRequestId || 'unknown'}] Image persistence insert failed: ${message}`);
+      if (safeConversationId && /foreign key|conversation_id/i.test(message)) {
+        try {
+          await p.query(
+            'INSERT INTO generated_files (id,user_id,conversation_id,filename,mime_type,size_bytes,data,expires_at) VALUES ($1,$2,NULL,$3,$4,$5,$6,$7)',
+            [id, req.user.sub, filename, 'image/png', buffer.length, buffer, new Date(Date.now() + 7 * 86400000)]
+          );
+          safeConversationId = null;
+        } catch (retryError) {
+          logger.error(`[IMAGE][${req.imageRequestId || 'unknown'}] Image persistence retry failed: ${retryError?.message || retryError}`);
+          throw Object.assign(new Error('The image was generated, but Rockstar could not save it. Please try again.'), { statusCode: 503, expose: true, code: 'IMAGE_PERSIST_FAILED' });
+        }
+      } else {
+        throw Object.assign(new Error('The image was generated, but Rockstar could not save it. Please try again.'), { statusCode: 503, expose: true, code: 'IMAGE_PERSIST_FAILED' });
+      }
     }
     files.push({ id, filename, mimeType: 'image/png', size: buffer.length, downloadUrl: `/api/tools/files/${id}`, inlineUrl: `/api/tools/files/${id}?inline=1`, revisedPrompt: images[i]?.revisedPrompt || null });
   }
+  if (!files.length) throw Object.assign(new Error('Cloudflare generated no usable image.'), { statusCode: 502, expose: true, code: 'IMAGE_EMPTY' });
   return files;
 }
 
